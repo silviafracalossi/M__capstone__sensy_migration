@@ -1,0 +1,16 @@
+
+import java.sql.*;
+
+public class H2DataExtractor {
+    Statement stmt;
+
+    public H2DataExtractor(Statement stmt) {
+      this.stmt = stmt;
+    }
+
+    // Retrieving all the accounts
+    public ResultSet getAllAccounts () throws Exception {
+        String sql =  "SELECT * FROM accounts;";
+        return stmt.executeQuery(sql);
+    }
+}
