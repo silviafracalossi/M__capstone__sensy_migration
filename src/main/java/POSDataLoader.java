@@ -9,9 +9,11 @@ public class POSDataLoader {
         this.stmt = stmt;
         String drop_db_sql = "DROP SCHEMA IF EXISTS public CASCADE;";
         stmt.executeUpdate(drop_db_sql);
+        System.out.println("[DROP] Schema");
 
         String create_db_sql = "CREATE SCHEMA public;";
         stmt.executeUpdate(create_db_sql);
+        System.out.println("[CREATION] Schema");
     }
 
     // Creating the Accounts table, including the PK sequence

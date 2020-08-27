@@ -45,7 +45,11 @@ public class Main {
          posdl = new POSDataLoader(pos_stmt);
 
          // Migration
-         migrateAccounts();
+         Boolean accounts_migration = migrateAccounts();
+
+         // Printing the results
+         System.out.println("\n== Merging result ==");
+         System.out.println("Accounts\t\t\t\t" + ((accounts_migration) ? "successful." : "failed."));
 
          // Closing connections and statements
          h2_stmt.close();
@@ -69,12 +73,11 @@ public class Main {
    }
 
    // Migrating the accounts data from H2 to PostgreSQL
-   public static void migrateAccounts() throws Exception {
+   public static Boolean migrateAccounts() throws Exception {
       System.out.println("\n== Accounts ==");
       if (posdl.createAccountsTable()) {
-         if (posdl.insertAccounts(h2de.getAllAccounts())) {
-            System.out.println("== Accounts: completed ==\n");
-         }
+         return posdl.insertAccounts(h2de.getAllAccounts());
       }
+      return false;
    }
 }
