@@ -48,12 +48,16 @@ public class Main {
          Boolean accounts_migration = posdl.migrateAccounts(h2de.getAllAccounts());
          Boolean demographic_info_migration = posdl.migrateDemographicInfo(h2de.getAllDemographyInfo());
          Boolean templates_migration = posdl.migrateTemplates(h2de.getAllQuestionnaireTemplates());
+         Boolean questionnaires_migration = posdl.migrateQuestionnaires(h2de.getAllQuestionnaires());
 
          // Printing the results
-         System.out.println("\n== Merging result ==");
-         System.out.println("Accounts\t\t\t\t" + ((accounts_migration) ? "successful" : "fail."));
-         System.out.println("Demographic Info\t\t" + ((demographic_info_migration) ? "successful" : "fail."));
-         System.out.println("Templates\t\t\t\t" + ((templates_migration) ? "successful" : "fail."));
+         System.out.println("\n-----------------------------------");
+         System.out.println("\t\tMIGRATION - SUM UP\t\t");
+         System.out.println("Accounts\t\t\t|\t" + ((accounts_migration) ? "successful" : "fail."));
+         System.out.println("Demographic Info\t|\t" + ((demographic_info_migration) ? "successful" : "fail."));
+         System.out.println("Questionnaires\t\t|\t" + ((questionnaires_migration) ? "successful" : "fail."));
+         System.out.println("Templates\t\t\t|\t" + ((templates_migration) ? "successful" : "fail."));
+         System.out.println("-----------------------------------");
 
          // Closing connections and statements
          h2_stmt.close();

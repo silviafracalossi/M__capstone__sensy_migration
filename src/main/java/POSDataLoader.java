@@ -287,14 +287,14 @@ public class POSDataLoader {
                 "    CACHE 1;";
 
         String templates_table_sql = "CREATE TABLE templates (" +
-                "    id_template bigint NOT NULL DEFAULT nextval('templates_id_seq'::regclass),\n" +
-                "    id_creator_account bigint,\n" +
-                "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL,\n" +
-                "    time_created  timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,\n" +
-                "    template_xml bytea NOT NULL,\n" +
-                "    CONSTRAINT templates_pk PRIMARY KEY (id_template),\n" +
-                "    CONSTRAINT templates_id_creator_account_fk FOREIGN KEY (id_creator_account)\n" +
-                "        REFERENCES accounts (id_account) MATCH SIMPLE\n" +
+                "    id_template bigint NOT NULL DEFAULT nextval('templates_id_seq'::regclass)," +
+                "    id_creator_account bigint," +
+                "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
+                "    time_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
+                "    template_xml bytea NOT NULL," +
+                "    CONSTRAINT templates_pk PRIMARY KEY (id_template)," +
+                "    CONSTRAINT templates_id_creator_account_fk FOREIGN KEY (id_creator_account)" +
+                "        REFERENCES accounts (id_account) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE\n" +
                 "        ON DELETE SET NULL\n" +
                 ")";
@@ -343,6 +343,93 @@ public class POSDataLoader {
 
         // Insertion result and return
         System.out.println("[INSERTION] Templates inserted: " +rows_inserted+ "/" +count);
+        return (rows_inserted == count);
+    }
+
+    // =====================================QUESTIONNAIRES===============================================================
+
+    // Migrating the questionnaires data from H2 to PostgreSQL
+    public Boolean migrateQuestionnaires(ResultSet h2_questionnaires) throws Exception {
+        System.out.println("\n== Questionnaires ==");
+        if (createQuestionnairesTable()) {
+            return insertQuestionnaires(h2_questionnaires);
+        }
+        return false;
+    }
+
+    // Creating the Questionnaire table, including the PK sequence
+    public Boolean createQuestionnairesTable() throws Exception {
+
+        String questionnaires_id_sequence_sql = "CREATE SEQUENCE questionnaires_id_seq" +
+                "    INCREMENT 1" +
+                "    START 1" +
+                "    MINVALUE 1" +
+                "    MAXVALUE 9223372036854775807" +
+                "    CACHE 1;";
+
+        String questionnaires_table_sql = "CREATE TABLE questionnaires (" +
+                "    id_questionnaire bigint NOT NULL DEFAULT nextval('questionnaires_id_seq'::regclass)," +
+                "    id_creator_account bigint," +
+                "    id_template bigint NOT NULL,\n" +
+                "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
+                "    time_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
+                "    state integer NOT NULL DEFAULT 0," +
+                "    CONSTRAINT questionnaires_pk PRIMARY KEY (id_questionnaire)," +
+                "    CONSTRAINT questionnaires_id_creator_account_fk FOREIGN KEY (id_creator_account)" +
+                "        REFERENCES accounts (id_account) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE SET NULL," +
+                "    CONSTRAINT questionnaires_id_template FOREIGN KEY (id_template)" +
+                "        REFERENCES templates (id_template) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE CASCADE" +
+                ")";
+
+        if (stmt.executeUpdate(questionnaires_id_sequence_sql) == 0) {
+            System.out.println("[CREATION] Sequence: questionnaires PK");
+            if (stmt.executeUpdate(questionnaires_table_sql) == 0) {
+                System.out.println("[CREATION] Table: questionnaires");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Preparing and inserting the data extracted from H2 database
+    public Boolean insertQuestionnaires(ResultSet h2_questionnairets) throws SQLException {
+
+        String insert_sql = "INSERT INTO questionnaires (" +
+                "id_questionnaire, id_creator_account, id_template, name, time_created, state" +
+                ") VALUES ";
+
+        // Iterating through all the templates retrieved from H2
+        String row_insertion_sql = "";
+        int count = 0, rows_inserted = 0;
+        while (h2_questionnairets.next()) {
+
+            // Creating the VALUES part for the current template
+            row_insertion_sql = "(";
+            row_insertion_sql += "'" + h2_questionnairets.getInt("id") + "', ";
+            row_insertion_sql += "'" + h2_questionnairets.getInt("created_by") + "', ";
+            row_insertion_sql += "'" + h2_questionnairets.getInt("template") + "', ";
+            row_insertion_sql += "'" + h2_questionnairets.getString("name") + "', ";
+            row_insertion_sql += "'" + h2_questionnairets.getTimestamp("time_created") + "', ";
+            row_insertion_sql+= "'" + h2_questionnairets.getInt("state") + "'";
+            row_insertion_sql += ")";
+            row_insertion_sql = row_insertion_sql.replace("''", "NULL");
+
+            // Insert the template into database
+            String final_query = insert_sql+row_insertion_sql+";";
+            if (stmt.executeUpdate(final_query) != 1) {
+                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+            } else {
+                rows_inserted++;
+            }
+            count++;
+        }
+
+        // Insertion result and return
+        System.out.println("[INSERTION] Questionnaires inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 
