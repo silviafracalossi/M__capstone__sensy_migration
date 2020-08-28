@@ -68,27 +68,20 @@ public class POSDataLoader {
     // Inserting the accounts provided by the H2 database
     public Boolean insertAccounts(ResultSet h2_accounts) throws Exception {
         if (h2_accounts != null) {
-            String insert_sql = "INSERT INTO public.accounts (" +
+            String insert_sql = "INSERT INTO accounts (" +
                     "id_account, first_name, last_name, email, password, account_type, code, " +
                     "time_registered, time_last_login, guest_login_code)" +
                     " VALUES ";
 
             String row_insertion_sql = "";
             Boolean first = true;
-            int count = 0;
+            int count = 0, rows_inserted = 0;
 
             // Iterating through all the accounts retrieved by H2
             while (h2_accounts.next()) {
 
-                // Checking first to add delimiter between different rows
-                if (first) {
-                    first = false;
-                } else {
-                    row_insertion_sql +=", ";
-                }
-
                 // Creating the VALUES part for the current account
-                row_insertion_sql += "(";
+                row_insertion_sql = "(";
                 row_insertion_sql += "'" + h2_accounts.getInt("id") + "', ";
                 row_insertion_sql += "'" + h2_accounts.getString("name") + "', ";
                 row_insertion_sql += "'', ";
@@ -102,16 +95,19 @@ public class POSDataLoader {
                 row_insertion_sql += ")";
                 row_insertion_sql = row_insertion_sql.replace("''", "NULL");
 
+                // Insert the account into database
+                String final_query = insert_sql+row_insertion_sql+";";
+                if (stmt.executeUpdate(final_query) != 1) {
+                    System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                } else {
+                    rows_inserted++;
+                }
                 count++;
             }
 
-            // Final sql fixes and execution of the script
-            insert_sql +=row_insertion_sql + ";";
-            int rows_affected = stmt.executeUpdate(insert_sql);
-
             // Insertion result and return
-            System.out.println("[INSERTION] Accounts inserted: " +rows_affected+ "/" +count);
-            return (rows_affected == count);
+            System.out.println("[INSERTION] Accounts inserted: " +rows_inserted+ "/" +count);
+            return (rows_inserted == count);
         }
         return false;
     }
@@ -130,19 +126,8 @@ public class POSDataLoader {
     public Boolean migrateDemographicInfo(ResultSet h2_demographyinfo) throws Exception {
         System.out.println("\n== Demographic Info ==");
         if (createDemographicInfoTable()) {
-
-            // Preparing the information
-            String prepared_information = transformDemographicInfo(h2_demographyinfo);
-
-            // Splitting between count (0) and insertion script (1)
-            String[] splitted_info = prepared_information.split("/", 2);
-
-            // Inserting the rows and printing the result
-            int rows_affected = insertDemographicInfo(splitted_info[1]);
-            System.out.println("[INSERTION] Demographic Info inserted: " +rows_affected+ "/" +splitted_info[0]);
-            return (rows_affected == Integer.parseInt(splitted_info[0]));
+            return insertDemographicInfo(h2_demographyinfo);
         }
-
         return false;
     }
 
@@ -174,13 +159,19 @@ public class POSDataLoader {
         return false;
     }
 
-    // Preparing the data for the insertion in the new structure
-    public String transformDemographicInfo(ResultSet h2_demographyinfo) throws SQLException {
+    // Preparing and inserting the data extracted from H2 database
+    public Boolean insertDemographicInfo(ResultSet h2_demographyinfo) throws SQLException {
+
+        String insert_sql = "INSERT INTO demographic_info (" +
+                "id_account, gender, phone_number, birth_year, home_country, home_region, education, " +
+                "smoking_detail, food_intolerance_detail, sulfite_intolerance)" +
+                " VALUES ";
+
 
         // Iterating through all the demographyic info retrieved from H2
-        int prev_id=-1, count=0;
+        int prev_id=-1, count=0, rows_inserted=0;
         String[] demographic_information = new String[10];
-        String insertion_sql = "";
+        String row_insertion = "";
         Boolean first = true;
 
         while (h2_demographyinfo.next()) {
@@ -192,18 +183,30 @@ public class POSDataLoader {
 
             // Preparing the insertion script
             if (current_id != prev_id) {
+
+                // If it is not the first row of the H2 ResultSet
                 if (prev_id != -1) {
-                    insertion_sql += (insertion_sql.compareTo("") == 0) ? "" : ",";
+
+                    // Retrieving the sorted information
                     for (int i=0; i<10; i++) {
-                        insertion_sql += (i==0) ? "(" : ", ";
-                        insertion_sql += "'" +demographic_information[i] +"'";
+                        row_insertion += (i==0) ? "(" : ", ";
+                        row_insertion += "'" +demographic_information[i] +"'";
                     }
-                    insertion_sql += ")";
+                    row_insertion += ")";
+
+                    // Preparing and executing the complete insertion script
+                    String final_query = insert_sql + row_insertion.replace("'null'", "NULL") + ";";
+                    if (stmt.executeUpdate(final_query) != 1) {
+                        System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                    } else {
+                        rows_inserted++;
+                    }
                 }
 
                 // Starting with a new user
                 count++;
                 prev_id = current_id;
+                row_insertion = "";
                 demographic_information[0] = current_id + "";
             }
 
@@ -250,37 +253,26 @@ public class POSDataLoader {
 
         // Saving last user
         if (count != 0) {
-            insertion_sql += (insertion_sql.compareTo("") == 0) ? "" : ", ";
+
+            // Retrieving the sorted information
             for (int i=0; i<10; i++) {
-                insertion_sql += (i==0) ? "(" : ", ";
-                insertion_sql += "'" +demographic_information[i] +"'";
+                row_insertion += (i==0) ? "(" : ", ";
+                row_insertion += "'" +demographic_information[i] +"'";
             }
-            insertion_sql += ")";
+            row_insertion += ")";
+
+            // Preparing and executing the complete insertion script
+            String final_query = insert_sql + row_insertion.replace("'null'", "NULL") + ";";
+            if (stmt.executeUpdate(final_query) != 1) {
+                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+            } else {
+                rows_inserted++;
+            }
         }
 
-        // Returning both the count and the prepared insertion script
-        insertion_sql = insertion_sql.replace("'null'", "NULL");
-        return count + "/" + insertion_sql + ";";
+        // Insertion result and return
+        System.out.println("[INSERTION] Demographic Information inserted: " +rows_inserted+ "/" +count);
+        return (rows_inserted == count);
     }
-
-    // Inserting the demographic information extracted from H2 database
-    public int insertDemographicInfo (String insertion_part) throws SQLException {
-
-        if (insertion_part != "") {
-            String insert_sql = "INSERT INTO demographic_info (" +
-                    "id_account, gender, phone_number, birth_year, home_country, home_region, education, " +
-                    "smoking_detail, food_intolerance_detail, sulfite_intolerance)" +
-                    " VALUES " +
-                    insertion_part;
-
-            // Insertion result and return
-            int rows_affected = stmt.executeUpdate(insert_sql);
-
-            return rows_affected;
-        }
-
-        return 0;
-    }
-
 
 }

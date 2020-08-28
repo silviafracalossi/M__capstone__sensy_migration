@@ -50,8 +50,8 @@ public class Main {
 
          // Printing the results
          System.out.println("\n== Merging result ==");
-         System.out.println("Accounts\t\t\t\t" + ((accounts_migration) ? "successful." : "fail."));
-         System.out.println("Demographic Info\t\t" + ((demographic_info_migration) ? "successful." : "fail."));
+         System.out.println("Accounts\t\t\t\t" + ((accounts_migration) ? "successful!" : "fail."));
+         System.out.println("Demographic Info\t\t" + ((demographic_info_migration) ? "successful!" : "fail."));
 
          // Closing connections and statements
          h2_stmt.close();
