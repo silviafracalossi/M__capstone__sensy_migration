@@ -49,12 +49,14 @@ public class Main {
          Boolean demographic_info_migration = posdl.migrateDemographicInfo(h2de.getAllDemographyInfo());
          Boolean templates_migration = posdl.migrateTemplates(h2de.getAllQuestionnaireTemplates());
          Boolean questionnaires_migration = posdl.migrateQuestionnaires(h2de.getAllQuestionnaires());
+         Boolean participates_migration = posdl.migrateParticipates(h2de.getAllQuestionnaireParticipants());
 
          // Printing the results
          System.out.println("\n-----------------------------------");
          System.out.println("\t\tMIGRATION - SUM UP\t\t");
          System.out.println("Accounts\t\t\t|\t" + ((accounts_migration) ? "successful" : "fail."));
          System.out.println("Demographic Info\t|\t" + ((demographic_info_migration) ? "successful" : "fail."));
+         System.out.println("Participates\t\t|\t" + ((participates_migration) ? "successful" : "fail."));
          System.out.println("Questionnaires\t\t|\t" + ((questionnaires_migration) ? "successful" : "fail."));
          System.out.println("Templates\t\t\t|\t" + ((templates_migration) ? "successful" : "fail."));
          System.out.println("-----------------------------------");

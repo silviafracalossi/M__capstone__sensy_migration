@@ -50,9 +50,9 @@ public class POSDataLoader {
                 "    time_registered timestamp with time zone NOT NULL," +
                 "    time_last_login timestamp with time zone NOT NULL," +
                 "    guest_login_code bytea," +
-                "    CONSTRAINT accounts_pk PRIMARY KEY (id_account)," +
-                "    CONSTRAINT accounts_code_unique UNIQUE (code)," +
-                "    CONSTRAINT accounts_email_unique UNIQUE (email)" +
+                "    CONSTRAINT accounts__pk PRIMARY KEY (id_account)," +
+                "    CONSTRAINT accounts__code__unique UNIQUE (code)," +
+                "    CONSTRAINT accounts__email__unique UNIQUE (email)" +
                 ")";
 
         if (stmt.executeUpdate(accounts_id_sequence_sql) == 0) {
@@ -112,7 +112,7 @@ public class POSDataLoader {
     }
 
 
-    // =====================================DEMOGRAPHYINFO===============================================================
+    // =====================================DEMOGRAPHYINFO==============================================================
 
     // Migrating the demographic data from H2 to PostgreSQL
     public Boolean migrateDemographicInfo(ResultSet h2_demographyinfo) throws Exception {
@@ -137,8 +137,8 @@ public class POSDataLoader {
                 "    smoking_detail character varying(100) DEFAULT NULL, \n"   +
                 "    food_intolerance_detail character varying(20) DEFAULT NULL, \n"   +
                 "    sulfite_intolerance boolean DEFAULT 'false', \n"   +
-                "    CONSTRAINT demographic_info_pk PRIMARY KEY (id_account),\n" +
-                "    CONSTRAINT demographic_info_id_account_fk FOREIGN KEY (id_account)\n" +
+                "    CONSTRAINT demographic_info__pk PRIMARY KEY (id_account),\n" +
+                "    CONSTRAINT demographic_info__id_account__fk FOREIGN KEY (id_account)\n" +
                 "        REFERENCES accounts (id_account) MATCH SIMPLE\n" +
                 "        ON UPDATE CASCADE\n" +
                 "        ON DELETE CASCADE\n" +
@@ -265,7 +265,7 @@ public class POSDataLoader {
         return (rows_inserted == count);
     }
 
-    // =====================================QUESTIONNAIRETEMPLATES===============================================================
+    // =====================================QUESTIONNAIRETEMPLATES======================================================
 
     // Migrating the templates data from H2 to PostgreSQL
     public Boolean migrateTemplates(ResultSet h2_questionnairetemplates) throws Exception {
@@ -292,8 +292,8 @@ public class POSDataLoader {
                 "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
                 "    time_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "    template_xml bytea NOT NULL," +
-                "    CONSTRAINT templates_pk PRIMARY KEY (id_template)," +
-                "    CONSTRAINT templates_id_creator_account_fk FOREIGN KEY (id_creator_account)" +
+                "    CONSTRAINT templates__pk PRIMARY KEY (id_template)," +
+                "    CONSTRAINT templates__id_creator_account__fk FOREIGN KEY (id_creator_account)" +
                 "        REFERENCES accounts (id_account) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE\n" +
                 "        ON DELETE SET NULL\n" +
@@ -346,7 +346,7 @@ public class POSDataLoader {
         return (rows_inserted == count);
     }
 
-    // =====================================QUESTIONNAIRES===============================================================
+    // =====================================QUESTIONNAIRES==============================================================
 
     // Migrating the questionnaires data from H2 to PostgreSQL
     public Boolean migrateQuestionnaires(ResultSet h2_questionnaires) throws Exception {
@@ -374,12 +374,13 @@ public class POSDataLoader {
                 "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
                 "    time_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "    state integer NOT NULL DEFAULT 0," +
-                "    CONSTRAINT questionnaires_pk PRIMARY KEY (id_questionnaire)," +
-                "    CONSTRAINT questionnaires_id_creator_account_fk FOREIGN KEY (id_creator_account)" +
+                "    has_wines boolean NOT NULL DEFAULT 'false'," +
+                "    CONSTRAINT questionnaires__pk PRIMARY KEY (id_questionnaire)," +
+                "    CONSTRAINT questionnaires__id_creator_account__fk FOREIGN KEY (id_creator_account)" +
                 "        REFERENCES accounts (id_account) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE SET NULL," +
-                "    CONSTRAINT questionnaires_id_template FOREIGN KEY (id_template)" +
+                "    CONSTRAINT questionnaires__id_template FOREIGN KEY (id_template)" +
                 "        REFERENCES templates (id_template) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE" +
@@ -396,25 +397,30 @@ public class POSDataLoader {
     }
 
     // Preparing and inserting the data extracted from H2 database
-    public Boolean insertQuestionnaires(ResultSet h2_questionnairets) throws SQLException {
+    public Boolean insertQuestionnaires(ResultSet h2_questionnaires) throws SQLException {
 
         String insert_sql = "INSERT INTO questionnaires (" +
-                "id_questionnaire, id_creator_account, id_template, name, time_created, state" +
+                "id_questionnaire, id_creator_account, id_template, name, time_created, state, has_wines" +
                 ") VALUES ";
 
         // Iterating through all the templates retrieved from H2
         String row_insertion_sql = "";
         int count = 0, rows_inserted = 0;
-        while (h2_questionnairets.next()) {
+        while (h2_questionnaires.next()) {
 
             // Creating the VALUES part for the current template
             row_insertion_sql = "(";
-            row_insertion_sql += "'" + h2_questionnairets.getInt("id") + "', ";
-            row_insertion_sql += "'" + h2_questionnairets.getInt("created_by") + "', ";
-            row_insertion_sql += "'" + h2_questionnairets.getInt("template") + "', ";
-            row_insertion_sql += "'" + h2_questionnairets.getString("name") + "', ";
-            row_insertion_sql += "'" + h2_questionnairets.getTimestamp("time_created") + "', ";
-            row_insertion_sql+= "'" + h2_questionnairets.getInt("state") + "'";
+            row_insertion_sql += "'" + h2_questionnaires.getInt("id") + "', ";
+            row_insertion_sql += "'" + h2_questionnaires.getInt("created_by") + "', ";
+            row_insertion_sql += "'" + h2_questionnaires.getInt("template") + "', ";
+            row_insertion_sql += "'" + h2_questionnaires.getString("name") + "', ";
+            row_insertion_sql += "'" + h2_questionnaires.getTimestamp("time_created") + "', ";
+            row_insertion_sql += "'" + h2_questionnaires.getInt("state") + "', ";
+
+            // changing the attribute from has_no_wines to has_wines
+            row_insertion_sql += "'" +
+                    ((h2_questionnaires.getBoolean("has_no_wines")) ? "false":"true")
+                    + "'";
             row_insertion_sql += ")";
             row_insertion_sql = row_insertion_sql.replace("''", "NULL");
 
@@ -433,5 +439,90 @@ public class POSDataLoader {
         return (rows_inserted == count);
     }
 
+    // =====================================PARTICIPATES===============================================================
+
+    // Migrating the participates data from H2 to PostgreSQL
+    public Boolean migrateParticipates(ResultSet h2_questionnaireparticipants) throws Exception {
+        System.out.println("\n== Participates ==");
+        if (createParticipatesTable()) {
+            return insertParticipates(h2_questionnaireparticipants);
+        }
+        return false;
+    }
+
+    // Creating the participates table
+    public Boolean createParticipatesTable() throws Exception {
+
+        String participates_table_sql = "CREATE TABLE participates (" +
+                "    id_participant_account bigint NOT NULL," +
+                "    id_questionnaire bigint NOT NULL," +
+                "    state integer NOT NULL DEFAULT 0," +
+                "    curr_wine_no integer NOT NULL DEFAULT 0," +
+                "    curr_section_no integer NOT NULL DEFAULT 0," +
+                "    time_section_started timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
+                "    CONSTRAINT participates__pk PRIMARY KEY (id_participant_account, id_questionnaire)," +
+                "    CONSTRAINT participates__id_participant__fk FOREIGN KEY (id_participant_account)" +
+                "        REFERENCES accounts (id_account) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE CASCADE," +
+                "    CONSTRAINT participates__id_questionnaire__fk FOREIGN KEY (id_questionnaire)" +
+                "        REFERENCES questionnaires (id_questionnaire) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE CASCADE" +
+                ")";
+
+        if (stmt.executeUpdate(participates_table_sql) == 0) {
+            System.out.println("[CREATION] Table: participates");
+            return true;
+        }
+        return false;
+    }
+
+    // Preparing and inserting the data extracted from H2 database
+    public Boolean insertParticipates(ResultSet h2_questionnaireparticipants) throws SQLException {
+
+        String insert_sql = "INSERT INTO participates (" +
+                "id_participant_account, id_questionnaire, state, curr_wine_no, " +
+                "curr_section_no, time_section_started" +
+                ") VALUES ";
+
+        // Iterating through all the participates retrieved from H2
+        String row_insertion_sql = "";
+        int count = 0, rows_inserted = 0;
+        while (h2_questionnaireparticipants.next()) {
+
+            // Creating the VALUES part for the current template
+            row_insertion_sql = "(";
+            row_insertion_sql += "'" + h2_questionnaireparticipants.getInt("participant") + "', ";
+            row_insertion_sql += "'" + h2_questionnaireparticipants.getInt("questionnaire") + "', ";
+            row_insertion_sql += "'" + h2_questionnaireparticipants.getInt("state") + "', ";
+            row_insertion_sql += "'" + h2_questionnaireparticipants.getInt("wine_index") + "', ";
+            row_insertion_sql += "'" + h2_questionnaireparticipants.getInt("section") + "', ";
+            row_insertion_sql += "'" + h2_questionnaireparticipants.getTimestamp("section_started_at");
+            row_insertion_sql += "')";
+            row_insertion_sql = row_insertion_sql.replace("''", "NULL");
+
+            // Insert the participates into database
+            String final_query = insert_sql+row_insertion_sql+";";
+            if (stmt.executeUpdate(final_query) != 1) {
+                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+            } else {
+                rows_inserted++;
+            }
+            count++;
+        }
+
+        // Insertion result and return
+        System.out.println("[INSERTION] Questionnaires inserted: " +rows_inserted+ "/" +count);
+        return (rows_inserted == count);
+    }
+
+
+    // Order of last ones:
+    // (Questionnaire - done)
+    // TODO Wines
+    // TODO Wine Participant Assignment
+    // (Participant)
+    // TODO Responses
 
 }
