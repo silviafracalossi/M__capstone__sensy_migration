@@ -74,7 +74,6 @@ public class POSDataLoader {
                     " VALUES ";
 
             String row_insertion_sql = "";
-            Boolean first = true;
             int count = 0, rows_inserted = 0;
 
             // Iterating through all the accounts retrieved by H2
@@ -91,7 +90,7 @@ public class POSDataLoader {
                 row_insertion_sql += "'" + h2_accounts.getInt("code") + "', ";
                 row_insertion_sql+= "'" + h2_accounts.getTimestamp("time_registered") + "', ";
                 row_insertion_sql += "'" + h2_accounts.getTimestamp("time_last_login") + "', ";
-                row_insertion_sql+= "'" + h2_accounts.getByte("guest_login_code") + "'";
+                row_insertion_sql+= "'" + h2_accounts.getBytes("guest_login_code") + "'";
                 row_insertion_sql += ")";
                 row_insertion_sql = row_insertion_sql.replace("''", "NULL");
 
@@ -112,17 +111,10 @@ public class POSDataLoader {
         return false;
     }
 
-    // Retrieving all the accounts
-    public ResultSet getAllAccounts () throws Exception {
-        System.out.println("Getting all accounts from PosgreSQL database...");
-        String sql =  "SELECT * FROM accounts;";
-        return stmt.executeQuery(sql);
-    }
-
 
     // =====================================DEMOGRAPHYINFO===============================================================
 
-    // Migrating the accounts data from H2 to PostgreSQL
+    // Migrating the demographic data from H2 to PostgreSQL
     public Boolean migrateDemographicInfo(ResultSet h2_demographyinfo) throws Exception {
         System.out.println("\n== Demographic Info ==");
         if (createDemographicInfoTable()) {
@@ -147,7 +139,7 @@ public class POSDataLoader {
                 "    sulfite_intolerance boolean DEFAULT 'false', \n"   +
                 "    CONSTRAINT demographic_info_pk PRIMARY KEY (id_account),\n" +
                 "    CONSTRAINT demographic_info_id_account_fk FOREIGN KEY (id_account)\n" +
-                "        REFERENCES public.accounts (id_account) MATCH SIMPLE\n" +
+                "        REFERENCES accounts (id_account) MATCH SIMPLE\n" +
                 "        ON UPDATE CASCADE\n" +
                 "        ON DELETE CASCADE\n" +
                 ")";
@@ -167,12 +159,10 @@ public class POSDataLoader {
                 "smoking_detail, food_intolerance_detail, sulfite_intolerance)" +
                 " VALUES ";
 
-
-        // Iterating through all the demographyic info retrieved from H2
+        // Iterating through all the demographic info retrieved from H2
         int prev_id=-1, count=0, rows_inserted=0;
         String[] demographic_information = new String[10];
         String row_insertion = "";
-        Boolean first = true;
 
         while (h2_demographyinfo.next()) {
 
@@ -274,5 +264,87 @@ public class POSDataLoader {
         System.out.println("[INSERTION] Demographic Information inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
+
+    // =====================================QUESTIONNAIRETEMPLATES===============================================================
+
+    // Migrating the templates data from H2 to PostgreSQL
+    public Boolean migrateTemplates(ResultSet h2_questionnairetemplates) throws Exception {
+        System.out.println("\n== Templates ==");
+        if (createTemplatesTable()) {
+            return insertTemplates(h2_questionnairetemplates);
+        }
+        return false;
+    }
+
+    // Creating the Templates table, including the PK sequence
+    public Boolean createTemplatesTable() throws Exception {
+
+        String templates_id_sequence_sql = "CREATE SEQUENCE templates_id_seq" +
+                "    INCREMENT 1" +
+                "    START 1" +
+                "    MINVALUE 1" +
+                "    MAXVALUE 9223372036854775807" +
+                "    CACHE 1;";
+
+        String templates_table_sql = "CREATE TABLE templates (" +
+                "    id_template bigint NOT NULL DEFAULT nextval('templates_id_seq'::regclass),\n" +
+                "    id_creator_account bigint,\n" +
+                "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL,\n" +
+                "    time_created  timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,\n" +
+                "    template_xml bytea NOT NULL,\n" +
+                "    CONSTRAINT templates_pk PRIMARY KEY (id_template),\n" +
+                "    CONSTRAINT templates_id_creator_account_fk FOREIGN KEY (id_creator_account)\n" +
+                "        REFERENCES accounts (id_account) MATCH SIMPLE\n" +
+                "        ON UPDATE CASCADE\n" +
+                "        ON DELETE SET NULL\n" +
+                ")";
+
+        if (stmt.executeUpdate(templates_id_sequence_sql) == 0) {
+            System.out.println("[CREATION] Sequence: templates PK");
+            if (stmt.executeUpdate(templates_table_sql) == 0) {
+                System.out.println("[CREATION] Table: templates");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Preparing and inserting the data extracted from H2 database
+    public Boolean insertTemplates(ResultSet h2_questionnairetemplates) throws SQLException {
+
+        String insert_sql = "INSERT INTO templates (" +
+                "id_template, id_creator_account, name, time_created, template_xml" +
+                ") VALUES ";
+
+        // Iterating through all the templates retrieved from H2
+        String row_insertion_sql = "";
+        int count = 0, rows_inserted = 0;
+        while (h2_questionnairetemplates.next()) {
+
+            // Creating the VALUES part for the current template
+            row_insertion_sql = "(";
+            row_insertion_sql += "'" + h2_questionnairetemplates.getInt("id") + "', ";
+            row_insertion_sql += "'" + h2_questionnairetemplates.getInt("created_by") + "', ";
+            row_insertion_sql += "'" + h2_questionnairetemplates.getString("name") + "', ";
+            row_insertion_sql += "'" + h2_questionnairetemplates.getTimestamp("time_created") + "', ";
+            row_insertion_sql+= "'" + h2_questionnairetemplates.getBytes("template_xml") + "'";
+            row_insertion_sql += ")";
+            row_insertion_sql = row_insertion_sql.replace("''", "NULL");
+
+            // Insert the template into database
+            String final_query = insert_sql+row_insertion_sql+";";
+            if (stmt.executeUpdate(final_query) != 1) {
+                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+            } else {
+                rows_inserted++;
+            }
+            count++;
+        }
+
+        // Insertion result and return
+        System.out.println("[INSERTION] Templates inserted: " +rows_inserted+ "/" +count);
+        return (rows_inserted == count);
+    }
+
 
 }

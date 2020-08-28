@@ -19,4 +19,10 @@ public class H2DataExtractor {
         String sql =  "SELECT * FROM demographyinfo ORDER BY user;";
         return stmt.executeQuery(sql);
     }
+
+    // Retrieving all the accounts
+    public ResultSet getAllQuestionnaireTemplates () throws Exception {
+        String sql =  "SELECT * FROM questionnairetemplates;";
+        return stmt.executeQuery(sql);
+    }
 }
