@@ -1,27 +1,30 @@
 
 import javax.xml.transform.Result;
 import java.sql.*;
+import java.util.logging.Logger;
 
 public class POSDataLoader {
     Statement stmt;
+    Logger logger;
 
     // Dropping the schema every time to avoid conflicts with old records //TODO remove this
-    public POSDataLoader(Statement stmt) throws Exception {
+    public POSDataLoader(Statement stmt, Logger logger) throws Exception {
         this.stmt = stmt;
+        this.logger = logger;
         String drop_db_sql = "DROP SCHEMA IF EXISTS public CASCADE;";
         stmt.executeUpdate(drop_db_sql);
-        System.out.println("[DROP] Schema");
+        logger.info("[DROP] Schema");
 
         String create_db_sql = "CREATE SCHEMA public;";
         stmt.executeUpdate(create_db_sql);
-        System.out.println("[CREATION] Schema");
+        logger.info("[CREATION] Schema");
     }
 
 
     // ========================================ACCOUNTS=================================================================
     // Migrating the accounts data from H2 to PostgreSQL
     public Boolean migrateAccounts(ResultSet h2_accounts) throws Exception {
-        System.out.println("\n== Accounts ==");
+        logger.info("\n== Accounts ==");
         if (createAccountsTable()) {
             return insertAccounts(h2_accounts);
         }
@@ -55,9 +58,9 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(accounts_id_sequence_sql) == 0) {
-            System.out.println("[CREATION] Sequence: accounts PK");
+            logger.info("[CREATION] Sequence: accounts PK");
             if (stmt.executeUpdate(accounts_table_sql) == 0) {
-                System.out.println("[CREATION] Table: accounts");
+                logger.info("[CREATION] Table: accounts");
                 return true;
             }
         }
@@ -96,7 +99,7 @@ public class POSDataLoader {
                 // Insert the account into database
                 String final_query = insert_sql+row_insertion_sql+";";
                 if (stmt.executeUpdate(final_query) != 1) {
-                    System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                    logger.info("[ERROR] Problem executing the following script: \n"+final_query);
                 } else {
                     rows_inserted++;
                 }
@@ -104,7 +107,7 @@ public class POSDataLoader {
             }
 
             // Insertion result and return
-            System.out.println("[INSERTION] Accounts inserted: " +rows_inserted+ "/" +count);
+            logger.info("[INSERTION] Accounts inserted: " +rows_inserted+ "/" +count);
             return (rows_inserted == count);
         }
         return false;
@@ -115,7 +118,7 @@ public class POSDataLoader {
 
     // Migrating the demographic data from H2 to PostgreSQL
     public Boolean migrateDemographicInfo(ResultSet h2_demographyinfo) throws Exception {
-        System.out.println("\n== Demographic Info ==");
+        logger.info("\n== Demographic Info ==");
         if (createDemographicInfoTable()) {
             return insertDemographicInfo(h2_demographyinfo);
         }
@@ -144,7 +147,7 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(demographic_info_table_sql) == 0) {
-            System.out.println("[CREATION] Table: demographic_info");
+            logger.info("[CREATION] Table: demographic_info");
             return true;
         }
         return false;
@@ -186,7 +189,7 @@ public class POSDataLoader {
                     // Preparing and executing the complete insertion script
                     String final_query = insert_sql + row_insertion.replace("'null'", "NULL") + ";";
                     if (stmt.executeUpdate(final_query) != 1) {
-                        System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                        logger.info("[ERROR] Problem executing the following script: \n"+final_query);
                     } else {
                         rows_inserted++;
                     }
@@ -253,14 +256,14 @@ public class POSDataLoader {
             // Preparing and executing the complete insertion script
             String final_query = insert_sql + row_insertion.replace("'null'", "NULL") + ";";
             if (stmt.executeUpdate(final_query) != 1) {
-                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                logger.info("[ERROR] Problem executing the following script: \n"+final_query);
             } else {
                 rows_inserted++;
             }
         }
 
         // Insertion result and return
-        System.out.println("[INSERTION] Demographic Information inserted: " +rows_inserted+ "/" +count);
+        logger.info("[INSERTION] Demographic Information inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 
@@ -268,7 +271,7 @@ public class POSDataLoader {
 
     // Migrating the templates data from H2 to PostgreSQL
     public Boolean migrateTemplates(ResultSet h2_questionnairetemplates) throws Exception {
-        System.out.println("\n== Templates ==");
+        logger.info("\n== Templates ==");
         if (createTemplatesTable()) {
             return insertTemplates(h2_questionnairetemplates);
         }
@@ -299,9 +302,9 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(templates_id_sequence_sql) == 0) {
-            System.out.println("[CREATION] Sequence: templates PK");
+            logger.info("[CREATION] Sequence: templates PK");
             if (stmt.executeUpdate(templates_table_sql) == 0) {
-                System.out.println("[CREATION] Table: templates");
+                logger.info("[CREATION] Table: templates");
                 return true;
             }
         }
@@ -333,7 +336,7 @@ public class POSDataLoader {
             // Insert the template into database
             String final_query = insert_sql+row_insertion_sql+";";
             if (stmt.executeUpdate(final_query) != 1) {
-                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                logger.info("[ERROR] Problem executing the following script: \n"+final_query);
             } else {
                 rows_inserted++;
             }
@@ -341,7 +344,7 @@ public class POSDataLoader {
         }
 
         // Insertion result and return
-        System.out.println("[INSERTION] Templates inserted: " +rows_inserted+ "/" +count);
+        logger.info("[INSERTION] Templates inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 
@@ -349,7 +352,7 @@ public class POSDataLoader {
 
     // Migrating the questionnaires data from H2 to PostgreSQL
     public Boolean migrateQuestionnaires(ResultSet h2_questionnaires) throws Exception {
-        System.out.println("\n== Questionnaires ==");
+        logger.info("\n== Questionnaires ==");
         if (createQuestionnairesTable()) {
             return insertQuestionnaires(h2_questionnaires);
         }
@@ -386,9 +389,9 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(questionnaires_id_sequence_sql) == 0) {
-            System.out.println("[CREATION] Sequence: questionnaires PK");
+            logger.info("[CREATION] Sequence: questionnaires PK");
             if (stmt.executeUpdate(questionnaires_table_sql) == 0) {
-                System.out.println("[CREATION] Table: questionnaires");
+                logger.info("[CREATION] Table: questionnaires");
                 return true;
             }
         }
@@ -426,7 +429,7 @@ public class POSDataLoader {
             // Insert the questionnaire into database
             String final_query = insert_sql+row_insertion_sql+";";
             if (stmt.executeUpdate(final_query) != 1) {
-                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                logger.info("[ERROR] Problem executing the following script: \n"+final_query);
             } else {
                 rows_inserted++;
             }
@@ -434,7 +437,7 @@ public class POSDataLoader {
         }
 
         // Insertion result and return
-        System.out.println("[INSERTION] Questionnaires inserted: " +rows_inserted+ "/" +count);
+        logger.info("[INSERTION] Questionnaires inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 
@@ -443,7 +446,7 @@ public class POSDataLoader {
 
     // Migrating the wines data from H2 to PostgreSQL
     public Boolean migrateWines(ResultSet h2_questionnairewines) throws Exception {
-        System.out.println("\n== Wines ==");
+        logger.info("\n== Wines ==");
         if (createWinesTable()) {
             return insertWines(h2_questionnairewines);
         }
@@ -478,11 +481,11 @@ public class POSDataLoader {
                 "    TABLESPACE pg_default;";
 
         if (stmt.executeUpdate(wines_id_sequence_sql) == 0) {
-            System.out.println("[CREATION] Sequence: wines PK");
+            logger.info("[CREATION] Sequence: wines PK");
             if (stmt.executeUpdate(wines_table_sql) == 0) {
-                System.out.println("[CREATION] Table: wines");
+                logger.info("[CREATION] Table: wines");
                 if (stmt.executeUpdate(wines_index) == 0) {
-                    System.out.println("[CREATION] Index: wines");
+                    logger.info("[CREATION] Index: wines");
                     return true;
                 }
             }
@@ -514,7 +517,7 @@ public class POSDataLoader {
             // Insert the wines into database
             String final_query = insert_sql+row_insertion_sql+";";
             if (stmt.executeUpdate(final_query) != 1) {
-                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                logger.info("[ERROR] Problem executing the following script: \n"+final_query);
             } else {
                 rows_inserted++;
             }
@@ -522,7 +525,7 @@ public class POSDataLoader {
         }
 
         // Insertion result and return
-        System.out.println("[INSERTION] Wines inserted: " +rows_inserted+ "/" +count);
+        logger.info("[INSERTION] Wines inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 
@@ -531,7 +534,7 @@ public class POSDataLoader {
 
     // Migrating the participates data from H2 to PostgreSQL
     public Boolean migrateParticipates(ResultSet h2_questionnaireparticipants) throws Exception {
-        System.out.println("\n== Participates ==");
+        logger.info("\n== Participates ==");
         if (createParticipatesTable()) {
             return insertParticipates(h2_questionnaireparticipants);
         }
@@ -560,7 +563,7 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(participates_table_sql) == 0) {
-            System.out.println("[CREATION] Table: participates");
+            logger.info("[CREATION] Table: participates");
             return true;
         }
         return false;
@@ -593,7 +596,7 @@ public class POSDataLoader {
             // Insert the participates into database
             String final_query = insert_sql+row_insertion_sql+";";
             if (stmt.executeUpdate(final_query) != 1) {
-                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                logger.info("[ERROR] Problem executing the following script: \n"+final_query);
             } else {
                 rows_inserted++;
             }
@@ -601,7 +604,7 @@ public class POSDataLoader {
         }
 
         // Insertion result and return
-        System.out.println("[INSERTION] Questionnaires inserted: " +rows_inserted+ "/" +count);
+        logger.info("[INSERTION] Questionnaires inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 
@@ -610,7 +613,7 @@ public class POSDataLoader {
 
     // Migrating the wines answering order data from H2 to PostgreSQL
     public Boolean migrateWinesAnswOrder(ResultSet h2_wineparticipantassignment) throws Exception {
-        System.out.println("\n== Wines Answering Order ==");
+        logger.info("\n== Wines Answering Order ==");
         if (createWinesAnswOrderTable()) {
             return insertWinesAnswOrder(h2_wineparticipantassignment);
         }
@@ -643,7 +646,7 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(wines_answ_order_table_sql) == 0) {
-            System.out.println("[CREATION] Table: wines_answ_order");
+            logger.info("[CREATION] Table: wines_answ_order");
             return true;
         }
 
@@ -674,7 +677,7 @@ public class POSDataLoader {
             // Insert the wines answering order into database
             String final_query = insert_sql+row_insertion_sql+";";
             if (stmt.executeUpdate(final_query) != 1) {
-                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                logger.info("[ERROR] Problem executing the following script: \n"+final_query);
             } else {
                 rows_inserted++;
             }
@@ -682,7 +685,7 @@ public class POSDataLoader {
         }
 
         // Insertion result and return
-        System.out.println("[INSERTION] Wines Answering Order inserted: " +rows_inserted+ "/" +count);
+        logger.info("[INSERTION] Wines Answering Order inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 
@@ -691,7 +694,7 @@ public class POSDataLoader {
 
     // Migrating the responses data from H2 to PostgreSQL
     public Boolean migrateResponses(ResultSet h2_questionnaireresponses) throws Exception {
-        System.out.println("\n== Responses ==");
+        logger.info("\n== Responses ==");
         if (createReponsesTable()) {
             return insertResponses(h2_questionnaireresponses);
         }
@@ -723,7 +726,7 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(responses_table_sql) == 0) {
-            System.out.println("[CREATION] Table: responses");
+            logger.info("[CREATION] Table: responses");
             return true;
         }
 
@@ -755,7 +758,7 @@ public class POSDataLoader {
             // Insert the responses into database
             String final_query = insert_sql+row_insertion_sql+";";
             if (stmt.executeUpdate(final_query) != 1) {
-                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+                logger.info("[ERROR] Problem executing the following script: \n"+final_query);
             } else {
                 rows_inserted++;
             }
@@ -763,7 +766,7 @@ public class POSDataLoader {
         }
 
         // Insertion result and return
-        System.out.println("[INSERTION] Responses inserted: " +rows_inserted+ "/" +count);
+        logger.info("[INSERTION] Responses inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 

@@ -1,5 +1,8 @@
 
 import java.sql.*;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class Main {
 
@@ -20,6 +23,10 @@ public class Main {
 
    public static void main(String[] args) {
 
+      // Creating the logger
+      Logger logger = Logger.getLogger("MigrationLog");
+      FileHandler fh;
+
       // Defining the connection and statement variables
       Connection h2_conn = null;
       Statement h2_stmt = null;
@@ -29,20 +36,26 @@ public class Main {
 
       try {
 
+         // Instantiating logger
+         fh = new FileHandler("migration.log");
+         logger.addHandler(fh);
+         SimpleFormatter formatter = new SimpleFormatter();
+         fh.setFormatter(formatter);
+
          // Opening a connection to the H2 database (DATA ORIGIN)
-         System.out.println("Connecting to the H2 database...");
+         logger.info("Connecting to the H2 database...");
          h2_conn = DriverManager.getConnection(H2_DB_URL,H2_USER,H2_PASS);
          h2_stmt = h2_conn.createStatement();
 
          // Opening a connection to the postgreSQL database (DATA DESTINATION)
-         System.out.println("Connecting to the PostgreSQLs database...");
+         logger.info("Connecting to the PostgreSQLs database...");
          String pos_complete_url = POS_DB_URL + POS_DB_NAME + "?user=" + POS_DB_USER +"&password=" + POS_PASS;
          pos_conn = DriverManager.getConnection(pos_complete_url);
          pos_stmt = pos_conn.createStatement();
 
          // Creating the objects for methods calling
          h2de = new H2DataExtractor(h2_stmt);
-         posdl = new POSDataLoader(pos_stmt);
+         posdl = new POSDataLoader(pos_stmt, logger);
 
          // Migration
          Boolean accounts_migration = posdl.migrateAccounts(h2de.getAllAccounts());
@@ -55,17 +68,17 @@ public class Main {
          Boolean responses_migration = posdl.migrateResponses(h2de.getAllQuestionnaireResponses());
 
          // Printing the results
-         System.out.println("\n---------------------------------------");
-         System.out.println("\t\t MIGRATION - SUM UP");
-         System.out.println("Accounts\t\t\t\t|\t" + ((accounts_migration) ? "successful" : "fail."));
-         System.out.println("Demographic Info\t\t|\t" + ((demographic_info_migration) ? "successful" : "fail."));
-         System.out.println("Participates\t\t\t|\t" + ((participates_migration) ? "successful" : "fail."));
-         System.out.println("Questionnaires\t\t\t|\t" + ((questionnaires_migration) ? "successful" : "fail."));
-         System.out.println("Responses\t\t\t\t|\t" + ((responses_migration) ? "successful" : "fail."));
-         System.out.println("Templates\t\t\t\t|\t" + ((templates_migration) ? "successful" : "fail."));
-         System.out.println("Wines\t\t\t\t\t|\t" + ((wines_migration) ? "successful" : "fail."));
-         System.out.println("Wines Answering Order\t|\t" + ((wines_answ_order_migration) ? "successful" : "fail."));
-         System.out.println("---------------------------------------");
+         logger.info("\n---------------------------------------");
+         logger.info("\t\t MIGRATION - SUM UP");
+         logger.info("Accounts\t\t\t\t|\t" + ((accounts_migration) ? "successful" : "fail."));
+         logger.info("Demographic Info\t\t\t|\t" + ((demographic_info_migration) ? "successful" : "fail."));
+         logger.info("Participates\t\t\t|\t" + ((participates_migration) ? "successful" : "fail."));
+         logger.info("Questionnaires\t\t\t|\t" + ((questionnaires_migration) ? "successful" : "fail."));
+         logger.info("Responses\t\t\t\t|\t" + ((responses_migration) ? "successful" : "fail."));
+         logger.info("Templates\t\t\t\t|\t" + ((templates_migration) ? "successful" : "fail."));
+         logger.info("Wines\t\t\t\t|\t" + ((wines_migration) ? "successful" : "fail."));
+         logger.info("Wines Answering Order\t\t|\t" + ((wines_answ_order_migration) ? "successful" : "fail."));
+         logger.info("---------------------------------------");
 
          // Closing connections and statements
          h2_stmt.close();
