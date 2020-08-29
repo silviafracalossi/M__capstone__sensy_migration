@@ -38,8 +38,7 @@ public class POSDataLoader {
                 "    MAXVALUE 9223372036854775807" +
                 "    CACHE 1;";
 
-        String accounts_table_sql = "CREATE TABLE accounts " +
-                "(" +
+        String accounts_table_sql = "CREATE TABLE accounts (" +
                 "    id_account bigint NOT NULL DEFAULT nextval('accounts_id_seq'::regclass)," +
                 "    first_name character varying(128) COLLATE pg_catalog.\"default\"," +
                 "    last_name character varying(128) COLLATE pg_catalog.\"default\"," +
@@ -369,8 +368,8 @@ public class POSDataLoader {
 
         String questionnaires_table_sql = "CREATE TABLE questionnaires (" +
                 "    id_questionnaire bigint NOT NULL DEFAULT nextval('questionnaires_id_seq'::regclass)," +
+                "    id_template bigint NOT NULL," +
                 "    id_creator_account bigint," +
-                "    id_template bigint NOT NULL,\n" +
                 "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
                 "    time_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "    state integer NOT NULL DEFAULT 0," +
@@ -400,7 +399,7 @@ public class POSDataLoader {
     public Boolean insertQuestionnaires(ResultSet h2_questionnaires) throws SQLException {
 
         String insert_sql = "INSERT INTO questionnaires (" +
-                "id_questionnaire, id_creator_account, id_template, name, time_created, state, has_wines" +
+                "id_questionnaire, id_template, id_creator_account, name, time_created, state, has_wines" +
                 ") VALUES ";
 
         // Iterating through all the questionnaires retrieved from H2
@@ -411,8 +410,8 @@ public class POSDataLoader {
             // Creating the VALUES part for the current template
             row_insertion_sql = "(";
             row_insertion_sql += "'" + h2_questionnaires.getInt("id") + "', ";
-            row_insertion_sql += "'" + h2_questionnaires.getInt("created_by") + "', ";
             row_insertion_sql += "'" + h2_questionnaires.getInt("template") + "', ";
+            row_insertion_sql += "'" + h2_questionnaires.getInt("created_by") + "', ";
             row_insertion_sql += "'" + h2_questionnaires.getString("name") + "', ";
             row_insertion_sql += "'" + h2_questionnaires.getTimestamp("time_created") + "', ";
             row_insertion_sql += "'" + h2_questionnaires.getInt("state") + "', ";
@@ -684,6 +683,87 @@ public class POSDataLoader {
 
         // Insertion result and return
         System.out.println("[INSERTION] Wines Answering Order inserted: " +rows_inserted+ "/" +count);
+        return (rows_inserted == count);
+    }
+
+
+    // =====================================RESPONSES==============================================================
+
+    // Migrating the responses data from H2 to PostgreSQL
+    public Boolean migrateResponses(ResultSet h2_questionnaireresponses) throws Exception {
+        System.out.println("\n== Responses ==");
+        if (createReponsesTable()) {
+            return insertResponses(h2_questionnaireresponses);
+        }
+        return false;
+    }
+
+    // Creating the Responses table
+    public Boolean createReponsesTable() throws Exception {
+
+        String responses_table_sql = "CREATE TABLE responses (" +
+                "    id_questionnaire bigint NOT NULL," +
+                "    id_participant_account bigint NOT NULL," +
+                "    id_wine bigint NOT NULL," +
+                "    question character varying(64) COLLATE pg_catalog.\"default\" NOT NULL," +
+                "    response character varying(500) COLLATE pg_catalog.\"default\" NOT NULL," +
+                "    CONSTRAINT responses__pk PRIMARY KEY (id_participant_account, id_questionnaire, id_wine, question)," +
+                "    CONSTRAINT responses__id_participant_account_id_questionnaire__fk FOREIGN KEY (id_participant_account, id_questionnaire)\n" +
+                "        REFERENCES participates (id_participant_account, id_questionnaire) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE RESTRICT," +
+                "    CONSTRAINT responses__id_questionnaire__fk FOREIGN KEY (id_questionnaire)" +
+                "        REFERENCES questionnaires (id_questionnaire) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE CASCADE," +
+                "    CONSTRAINT responses__id_wine__fk FOREIGN KEY (id_wine)" +
+                "        REFERENCES wines (id_wine) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE CASCADE" +
+                ")";
+
+        if (stmt.executeUpdate(responses_table_sql) == 0) {
+            System.out.println("[CREATION] Table: responses");
+            return true;
+        }
+
+        return false;
+    }
+
+    // Preparing and inserting the data extracted from H2 database
+    public Boolean insertResponses(ResultSet h2_questionnaireresponses) throws SQLException {
+
+        String insert_sql = "INSERT INTO responses (" +
+                "id_questionnaire, id_participant_account, id_wine, question, response" +
+                ") VALUES ";
+
+        // Iterating through all the responses retrieved from H2
+        String row_insertion_sql = "";
+        int count = 0, rows_inserted = 0;
+        while (h2_questionnaireresponses.next()) {
+
+            // Creating the VALUES part for the current template
+            row_insertion_sql = "(";
+            row_insertion_sql += "'" + h2_questionnaireresponses.getInt("questionnaire") + "', ";
+            row_insertion_sql += "'" + h2_questionnaireresponses.getInt("participant") + "', ";
+            row_insertion_sql += "'" + h2_questionnaireresponses.getInt("wine") + "', ";
+            row_insertion_sql += "'" + h2_questionnaireresponses.getString("question_id") + "',";
+            row_insertion_sql += "'" + h2_questionnaireresponses.getString("response") + "'";
+            row_insertion_sql += ")";
+            row_insertion_sql = row_insertion_sql.replace("''", "NULL");
+
+            // Insert the responses into database
+            String final_query = insert_sql+row_insertion_sql+";";
+            if (stmt.executeUpdate(final_query) != 1) {
+                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+            } else {
+                rows_inserted++;
+            }
+            count++;
+        }
+
+        // Insertion result and return
+        System.out.println("[INSERTION] Responses inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 

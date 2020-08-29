@@ -51,8 +51,8 @@ public class Main {
          Boolean questionnaires_migration = posdl.migrateQuestionnaires(h2de.getAllQuestionnaires());
          Boolean wines_migration = posdl.migrateWines(h2de.getAllQuestionnaireWines());
          Boolean participates_migration = posdl.migrateParticipates(h2de.getAllQuestionnaireParticipants());
-         Boolean wines_answ_order = posdl.migrateWinesAnswOrder(h2de.getAllWineParticipantAssignment());
-         // TODO Responses
+         Boolean wines_answ_order_migration = posdl.migrateWinesAnswOrder(h2de.getAllWineParticipantAssignment());
+         Boolean responses_migration = posdl.migrateResponses(h2de.getAllQuestionnaireResponses());
 
          // Printing the results
          System.out.println("\n---------------------------------------");
@@ -61,9 +61,10 @@ public class Main {
          System.out.println("Demographic Info\t\t|\t" + ((demographic_info_migration) ? "successful" : "fail."));
          System.out.println("Participates\t\t\t|\t" + ((participates_migration) ? "successful" : "fail."));
          System.out.println("Questionnaires\t\t\t|\t" + ((questionnaires_migration) ? "successful" : "fail."));
+         System.out.println("Responses\t\t\t\t|\t" + ((responses_migration) ? "successful" : "fail."));
          System.out.println("Templates\t\t\t\t|\t" + ((templates_migration) ? "successful" : "fail."));
          System.out.println("Wines\t\t\t\t\t|\t" + ((wines_migration) ? "successful" : "fail."));
-         System.out.println("Wines Answering Order\t|\t" + ((wines_answ_order) ? "successful" : "fail."));
+         System.out.println("Wines Answering Order\t|\t" + ((wines_answ_order_migration) ? "successful" : "fail."));
          System.out.println("---------------------------------------");
 
          // Closing connections and statements
