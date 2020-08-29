@@ -49,7 +49,10 @@ public class Main {
          Boolean demographic_info_migration = posdl.migrateDemographicInfo(h2de.getAllDemographyInfo());
          Boolean templates_migration = posdl.migrateTemplates(h2de.getAllQuestionnaireTemplates());
          Boolean questionnaires_migration = posdl.migrateQuestionnaires(h2de.getAllQuestionnaires());
+         Boolean wines_migration = posdl.migrateWines(h2de.getAllQuestionnaireWines());
+         // TODO Wine Participant Assignment
          Boolean participates_migration = posdl.migrateParticipates(h2de.getAllQuestionnaireParticipants());
+         // TODO Responses
 
          // Printing the results
          System.out.println("\n-----------------------------------");
@@ -59,6 +62,7 @@ public class Main {
          System.out.println("Participates\t\t|\t" + ((participates_migration) ? "successful" : "fail."));
          System.out.println("Questionnaires\t\t|\t" + ((questionnaires_migration) ? "successful" : "fail."));
          System.out.println("Templates\t\t\t|\t" + ((templates_migration) ? "successful" : "fail."));
+         System.out.println("Wines\t\t\t\t|\t" + ((wines_migration) ? "successful" : "fail."));
          System.out.println("-----------------------------------");
 
          // Closing connections and statements

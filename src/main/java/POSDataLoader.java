@@ -403,7 +403,7 @@ public class POSDataLoader {
                 "id_questionnaire, id_creator_account, id_template, name, time_created, state, has_wines" +
                 ") VALUES ";
 
-        // Iterating through all the templates retrieved from H2
+        // Iterating through all the questionnaires retrieved from H2
         String row_insertion_sql = "";
         int count = 0, rows_inserted = 0;
         while (h2_questionnaires.next()) {
@@ -424,7 +424,7 @@ public class POSDataLoader {
             row_insertion_sql += ")";
             row_insertion_sql = row_insertion_sql.replace("''", "NULL");
 
-            // Insert the template into database
+            // Insert the questionnaire into database
             String final_query = insert_sql+row_insertion_sql+";";
             if (stmt.executeUpdate(final_query) != 1) {
                 System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
@@ -436,6 +436,94 @@ public class POSDataLoader {
 
         // Insertion result and return
         System.out.println("[INSERTION] Questionnaires inserted: " +rows_inserted+ "/" +count);
+        return (rows_inserted == count);
+    }
+
+
+    // =====================================WINES==============================================================
+
+    // Migrating the wines data from H2 to PostgreSQL
+    public Boolean migrateWines(ResultSet h2_questionnairewines) throws Exception {
+        System.out.println("\n== Wines ==");
+        if (createWinesTable()) {
+            return insertWines(h2_questionnairewines);
+        }
+        return false;
+    }
+
+    // Creating the Wines table, including the sequence and index
+    public Boolean createWinesTable() throws Exception {
+
+        String wines_id_sequence_sql = "CREATE SEQUENCE wines_id_seq" +
+                "    INCREMENT 1" +
+                "    START 1" +
+                "    MINVALUE 1" +
+                "    MAXVALUE 9223372036854775807" +
+                "    CACHE 1;";
+
+        String wines_table_sql = "CREATE TABLE wines (" +
+                "    id_wine bigint NOT NULL DEFAULT nextval('wines_id_seq'::regclass)," +
+                "    id_questionnaire bigint NOT NULL," +
+                "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
+                "    code integer NOT NULL," +
+                "    CONSTRAINT wines__pk PRIMARY KEY (id_wine)," +
+                "    CONSTRAINT wines__id_questionnaire__fk FOREIGN KEY (id_questionnaire)" +
+                "        REFERENCES questionnaires (id_questionnaire) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE CASCADE" +
+                ")";
+
+        String wines_index = "CREATE INDEX wines__id_questionnaire__index\n" +
+                "    ON wines USING btree\n" +
+                "    (id_questionnaire ASC NULLS LAST)\n" +
+                "    TABLESPACE pg_default;";
+
+        if (stmt.executeUpdate(wines_id_sequence_sql) == 0) {
+            System.out.println("[CREATION] Sequence: wines PK");
+            if (stmt.executeUpdate(wines_table_sql) == 0) {
+                System.out.println("[CREATION] Table: wines");
+                if (stmt.executeUpdate(wines_index) == 0) {
+                    System.out.println("[CREATION] Index: wines");
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Preparing and inserting the data extracted from H2 database
+    public Boolean insertWines(ResultSet h2_questionnairewines) throws SQLException {
+
+        String insert_sql = "INSERT INTO wines (" +
+                "id_wine, id_questionnaire, name, code" +
+                ") VALUES ";
+
+        // Iterating through all the wines retrieved from H2
+        String row_insertion_sql = "";
+        int count = 0, rows_inserted = 0;
+        while (h2_questionnairewines.next()) {
+
+            // Creating the VALUES part for the current template
+            row_insertion_sql = "(";
+            row_insertion_sql += "'" + h2_questionnairewines.getInt("id") + "', ";
+            row_insertion_sql += "'" + h2_questionnairewines.getInt("questionnaire") + "', ";
+            row_insertion_sql += "'" + h2_questionnairewines.getString("name") + "', ";
+            row_insertion_sql += "'" + h2_questionnairewines.getInt("code") + "'";
+            row_insertion_sql += ")";
+            row_insertion_sql = row_insertion_sql.replace("''", "NULL");
+
+            // Insert the wines into database
+            String final_query = insert_sql+row_insertion_sql+";";
+            if (stmt.executeUpdate(final_query) != 1) {
+                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+            } else {
+                rows_inserted++;
+            }
+            count++;
+        }
+
+        // Insertion result and return
+        System.out.println("[INSERTION] Wines inserted: " +rows_inserted+ "/" +count);
         return (rows_inserted == count);
     }
 
@@ -519,8 +607,6 @@ public class POSDataLoader {
 
 
     // Order of last ones:
-    // (Questionnaire - done)
-    // TODO Wines
     // TODO Wine Participant Assignment
     // (Participant)
     // TODO Responses
