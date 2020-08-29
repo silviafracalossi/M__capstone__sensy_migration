@@ -527,6 +527,7 @@ public class POSDataLoader {
         return (rows_inserted == count);
     }
 
+
     // =====================================PARTICIPATES===============================================================
 
     // Migrating the participates data from H2 to PostgreSQL
@@ -606,9 +607,84 @@ public class POSDataLoader {
     }
 
 
-    // Order of last ones:
-    // TODO Wine Participant Assignment
-    // (Participant)
-    // TODO Responses
+    // =====================================WINES ANSWERING ORDER==============================================================
+
+    // Migrating the wines answering order data from H2 to PostgreSQL
+    public Boolean migrateWinesAnswOrder(ResultSet h2_wineparticipantassignment) throws Exception {
+        System.out.println("\n== Wines Answering Order ==");
+        if (createWinesAnswOrderTable()) {
+            return insertWinesAnswOrder(h2_wineparticipantassignment);
+        }
+        return false;
+    }
+
+    // Creating the Wines Answering Order table
+    public Boolean createWinesAnswOrderTable() throws Exception {
+
+        String wines_answ_order_table_sql = "CREATE TABLE wines_answ_order (" +
+                "    id_questionnaire bigint NOT NULL," +
+                "    id_participant_account bigint NOT NULL," +
+                "    id_wine bigint NOT NULL," +
+                "    position integer NOT NULL," +
+                "    CONSTRAINT wines_answ_order__pk PRIMARY KEY (id_questionnaire, id_participant_account, position)," +
+                "    CONSTRAINT wines_answ_order__id_questionnaire_id_wine_id_participant__unique UNIQUE" +
+                "        (id_questionnaire, id_participant_account, id_wine)," +
+                "    CONSTRAINT wines_answ_order__id_participant_account_id_questionnaire__fk FOREIGN KEY (id_participant_account, id_questionnaire)" +
+                "        REFERENCES participates (id_participant_account, id_questionnaire) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE CASCADE," +
+                "    CONSTRAINT wines_answ_order__id_questionnaire__fk FOREIGN KEY (id_questionnaire)" +
+                "        REFERENCES questionnaires (id_questionnaire) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE CASCADE," +
+                "    CONSTRAINT wines_answ_order__id_wine__fk FOREIGN KEY (id_wine)" +
+                "        REFERENCES wines (id_wine) MATCH SIMPLE" +
+                "        ON UPDATE CASCADE" +
+                "        ON DELETE CASCADE" +
+                ")";
+
+        if (stmt.executeUpdate(wines_answ_order_table_sql) == 0) {
+            System.out.println("[CREATION] Table: wines_answ_order");
+            return true;
+        }
+
+        return false;
+    }
+
+    // Preparing and inserting the data extracted from H2 database
+    public Boolean insertWinesAnswOrder(ResultSet h2_wineparticipantassignment) throws SQLException {
+
+        String insert_sql = "INSERT INTO wines_answ_order (" +
+                "id_questionnaire, id_participant_account, id_wine, position" +
+                ") VALUES ";
+
+        // Iterating through all the wines retrieved from H2
+        String row_insertion_sql = "";
+        int count = 0, rows_inserted = 0;
+        while (h2_wineparticipantassignment.next()) {
+
+            // Creating the VALUES part for the current template
+            row_insertion_sql = "(";
+            row_insertion_sql += "'" + h2_wineparticipantassignment.getInt("questionnaire") + "', ";
+            row_insertion_sql += "'" + h2_wineparticipantassignment.getInt("participant") + "', ";
+            row_insertion_sql += "'" + h2_wineparticipantassignment.getInt("wine") + "', ";
+            row_insertion_sql += "'" + h2_wineparticipantassignment.getInt("order") + "'";
+            row_insertion_sql += ")";
+            row_insertion_sql = row_insertion_sql.replace("''", "NULL");
+
+            // Insert the wines answering order into database
+            String final_query = insert_sql+row_insertion_sql+";";
+            if (stmt.executeUpdate(final_query) != 1) {
+                System.out.println("[ERROR] Problem executing the following script: \n"+final_query);
+            } else {
+                rows_inserted++;
+            }
+            count++;
+        }
+
+        // Insertion result and return
+        System.out.println("[INSERTION] Wines Answering Order inserted: " +rows_inserted+ "/" +count);
+        return (rows_inserted == count);
+    }
 
 }

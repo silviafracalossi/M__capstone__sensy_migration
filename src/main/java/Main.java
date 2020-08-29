@@ -50,20 +50,21 @@ public class Main {
          Boolean templates_migration = posdl.migrateTemplates(h2de.getAllQuestionnaireTemplates());
          Boolean questionnaires_migration = posdl.migrateQuestionnaires(h2de.getAllQuestionnaires());
          Boolean wines_migration = posdl.migrateWines(h2de.getAllQuestionnaireWines());
-         // TODO Wine Participant Assignment
          Boolean participates_migration = posdl.migrateParticipates(h2de.getAllQuestionnaireParticipants());
+         Boolean wines_answ_order = posdl.migrateWinesAnswOrder(h2de.getAllWineParticipantAssignment());
          // TODO Responses
 
          // Printing the results
-         System.out.println("\n-----------------------------------");
-         System.out.println("\t\tMIGRATION - SUM UP\t\t");
-         System.out.println("Accounts\t\t\t|\t" + ((accounts_migration) ? "successful" : "fail."));
-         System.out.println("Demographic Info\t|\t" + ((demographic_info_migration) ? "successful" : "fail."));
-         System.out.println("Participates\t\t|\t" + ((participates_migration) ? "successful" : "fail."));
-         System.out.println("Questionnaires\t\t|\t" + ((questionnaires_migration) ? "successful" : "fail."));
-         System.out.println("Templates\t\t\t|\t" + ((templates_migration) ? "successful" : "fail."));
-         System.out.println("Wines\t\t\t\t|\t" + ((wines_migration) ? "successful" : "fail."));
-         System.out.println("-----------------------------------");
+         System.out.println("\n---------------------------------------");
+         System.out.println("\t\t MIGRATION - SUM UP");
+         System.out.println("Accounts\t\t\t\t|\t" + ((accounts_migration) ? "successful" : "fail."));
+         System.out.println("Demographic Info\t\t|\t" + ((demographic_info_migration) ? "successful" : "fail."));
+         System.out.println("Participates\t\t\t|\t" + ((participates_migration) ? "successful" : "fail."));
+         System.out.println("Questionnaires\t\t\t|\t" + ((questionnaires_migration) ? "successful" : "fail."));
+         System.out.println("Templates\t\t\t\t|\t" + ((templates_migration) ? "successful" : "fail."));
+         System.out.println("Wines\t\t\t\t\t|\t" + ((wines_migration) ? "successful" : "fail."));
+         System.out.println("Wines Answering Order\t|\t" + ((wines_answ_order) ? "successful" : "fail."));
+         System.out.println("---------------------------------------");
 
          // Closing connections and statements
          h2_stmt.close();
