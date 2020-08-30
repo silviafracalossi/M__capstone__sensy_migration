@@ -770,4 +770,23 @@ public class POSDataLoader {
         return (rows_inserted == count);
     }
 
+    // ====================================PANELISTS CODE SEQUENCE=======================================================
+    // Creating the Panelist code sequence
+    public Boolean createPanelistCodeSequence() throws Exception {
+
+        String panelist_code_sequence_sql = "CREATE SEQUENCE panelist_code_seq" +
+                "    INCREMENT 1" +
+                "    START 100 "+
+                "    MINVALUE 1" +
+                "    MAXVALUE 9223372036854775807" +
+                "    CACHE 1;";
+
+        if (stmt.executeUpdate(panelist_code_sequence_sql) == 0) {
+            logger.info("[CREATION] Sequence: panelist_code");
+            return true;
+        }
+        return false;
+    }
+
+
 }

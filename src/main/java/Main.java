@@ -67,6 +67,10 @@ public class Main {
          Boolean wines_answ_order_migration = posdl.migrateWinesAnswOrder(h2de.getAllWineParticipantAssignment());
          Boolean responses_migration = posdl.migrateResponses(h2de.getAllQuestionnaireResponses());
 
+         // Creating the panelist sequence
+         logger.info("\n== Panelist Code Sequence ==");
+         logger.info("Creation resulted " + ((posdl.createPanelistCodeSequence()) ? "successful" : "fail."));
+
          // Printing the results
          logger.info("\n---------------------------------------");
          logger.info("\t\t MIGRATION - SUM UP");
