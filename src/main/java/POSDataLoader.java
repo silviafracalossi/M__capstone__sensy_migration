@@ -1,9 +1,6 @@
 
-import javax.xml.transform.Result;
 import java.sql.*;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class POSDataLoader {
     Connection connection;
@@ -27,20 +24,20 @@ public class POSDataLoader {
 
     // ========================================ACCOUNTS=================================================================
     // Migrating the accounts data from H2 to PostgreSQL
-    public Boolean migrateAccounts(ResultSet h2_accounts) throws Exception {
+    public Boolean migrateAccounts(int next_account_id, ResultSet h2_accounts) throws Exception {
         logger.info("\n== Accounts ==");
-        if (createAccountsTable()) {
+        if (createAccountsTable(next_account_id)) {
             return insertAccounts(h2_accounts);
         }
         return false;
     }
 
     // Creating the Accounts table, including the PK sequence
-    public Boolean createAccountsTable() throws Exception {
+    public Boolean createAccountsTable(int next_account_id) throws Exception {
 
         String accounts_id_sequence_sql = "CREATE SEQUENCE accounts_id_seq" +
                 "    INCREMENT 1" +
-                "    START 1" +
+                "    START " +(next_account_id+1)+
                 "    MINVALUE 1" +
                 "    MAXVALUE 9223372036854775807" +
                 "    CACHE 1;";
@@ -62,7 +59,7 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(accounts_id_sequence_sql) == 0) {
-            logger.info("[CREATION] Sequence: accounts PK");
+            logger.info("[CREATION] Sequence: accounts PK (starting from "+(next_account_id+1)+")");
             if (stmt.executeUpdate(accounts_table_sql) == 0) {
                 logger.info("[CREATION] Table: accounts");
                 return true;
@@ -278,20 +275,20 @@ public class POSDataLoader {
     // =====================================QUESTIONNAIRETEMPLATES======================================================
 
     // Migrating the templates data from H2 to PostgreSQL
-    public Boolean migrateTemplates(ResultSet h2_questionnairetemplates) throws Exception {
+    public Boolean migrateTemplates(int next_template_id, ResultSet h2_questionnairetemplates) throws Exception {
         logger.info("\n== Templates ==");
-        if (createTemplatesTable()) {
+        if (createTemplatesTable(next_template_id)) {
             return insertTemplates(h2_questionnairetemplates);
         }
         return false;
     }
 
     // Creating the Templates table, including the PK sequence
-    public Boolean createTemplatesTable() throws Exception {
+    public Boolean createTemplatesTable(int next_template_id) throws Exception {
 
         String templates_id_sequence_sql = "CREATE SEQUENCE templates_id_seq" +
                 "    INCREMENT 1" +
-                "    START 1" +
+                "    START " +(next_template_id+1)+
                 "    MINVALUE 1" +
                 "    MAXVALUE 9223372036854775807" +
                 "    CACHE 1;";
@@ -310,7 +307,7 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(templates_id_sequence_sql) == 0) {
-            logger.info("[CREATION] Sequence: templates PK");
+            logger.info("[CREATION] Sequence: templates PK (starting from "+(next_template_id+1)+")");
             if (stmt.executeUpdate(templates_table_sql) == 0) {
                 logger.info("[CREATION] Table: templates");
                 return true;
@@ -360,20 +357,20 @@ public class POSDataLoader {
     // =====================================QUESTIONNAIRES==============================================================
 
     // Migrating the questionnaires data from H2 to PostgreSQL
-    public Boolean migrateQuestionnaires(ResultSet h2_questionnaires) throws Exception {
+    public Boolean migrateQuestionnaires(int next_questionnaire_id, ResultSet h2_questionnaires) throws Exception {
         logger.info("\n== Questionnaires ==");
-        if (createQuestionnairesTable()) {
+        if (createQuestionnairesTable(next_questionnaire_id)) {
             return insertQuestionnaires(h2_questionnaires);
         }
         return false;
     }
 
     // Creating the Questionnaire table, including the PK sequence
-    public Boolean createQuestionnairesTable() throws Exception {
+    public Boolean createQuestionnairesTable(int next_questionnaire_id) throws Exception {
 
         String questionnaires_id_sequence_sql = "CREATE SEQUENCE questionnaires_id_seq" +
                 "    INCREMENT 1" +
-                "    START 1" +
+                "    START " +(next_questionnaire_id+1)+
                 "    MINVALUE 1" +
                 "    MAXVALUE 9223372036854775807" +
                 "    CACHE 1;";
@@ -398,7 +395,7 @@ public class POSDataLoader {
                 ")";
 
         if (stmt.executeUpdate(questionnaires_id_sequence_sql) == 0) {
-            logger.info("[CREATION] Sequence: questionnaires PK");
+            logger.info("[CREATION] Sequence: questionnaires PK (starting from "+(next_questionnaire_id+1)+")");
             if (stmt.executeUpdate(questionnaires_table_sql) == 0) {
                 logger.info("[CREATION] Table: questionnaires");
                 return true;
@@ -454,20 +451,20 @@ public class POSDataLoader {
     // =====================================WINES==============================================================
 
     // Migrating the wines data from H2 to PostgreSQL
-    public Boolean migrateWines(ResultSet h2_questionnairewines) throws Exception {
+    public Boolean migrateWines(int next_wine_id, ResultSet h2_questionnairewines) throws Exception {
         logger.info("\n== Wines ==");
-        if (createWinesTable()) {
+        if (createWinesTable(next_wine_id)) {
             return insertWines(h2_questionnairewines);
         }
         return false;
     }
 
     // Creating the Wines table, including the sequence and index
-    public Boolean createWinesTable() throws Exception {
+    public Boolean createWinesTable(int next_wine_id) throws Exception {
 
         String wines_id_sequence_sql = "CREATE SEQUENCE wines_id_seq" +
                 "    INCREMENT 1" +
-                "    START 1" +
+                "    START " +(next_wine_id+1)+
                 "    MINVALUE 1" +
                 "    MAXVALUE 9223372036854775807" +
                 "    CACHE 1;";
@@ -490,7 +487,7 @@ public class POSDataLoader {
                 "    TABLESPACE pg_default;";
 
         if (stmt.executeUpdate(wines_id_sequence_sql) == 0) {
-            logger.info("[CREATION] Sequence: wines PK");
+            logger.info("[CREATION] Sequence: wines PK (starting from "+(next_wine_id+1)+")");
             if (stmt.executeUpdate(wines_table_sql) == 0) {
                 logger.info("[CREATION] Table: wines");
                 if (stmt.executeUpdate(wines_index) == 0) {
@@ -781,17 +778,17 @@ public class POSDataLoader {
 
     // ====================================PANELISTS CODE SEQUENCE=======================================================
     // Creating the Panelist code sequence
-    public Boolean createPanelistCodeSequence() throws Exception {
+    public Boolean createPanelistCodeSequence(int next_panelist_code) throws Exception {
 
         String panelist_code_sequence_sql = "CREATE SEQUENCE panelist_code_seq" +
                 "    INCREMENT 1" +
-                "    START 100 "+
+                "    START " +(next_panelist_code+1)+
                 "    MINVALUE 1" +
                 "    MAXVALUE 9223372036854775807" +
                 "    CACHE 1;";
 
         if (stmt.executeUpdate(panelist_code_sequence_sql) == 0) {
-            logger.info("[CREATION] Sequence: panelist_code");
+            logger.info("[CREATION] Sequence: panelist_code (starting from "+(next_panelist_code+1)+")");
             return true;
         }
         return false;

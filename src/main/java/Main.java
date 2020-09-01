@@ -58,18 +58,31 @@ public class Main {
          posdl = new POSDataLoader(pos_conn, pos_stmt, logger);
 
          // Migration
-         Boolean accounts_migration = posdl.migrateAccounts(h2de.getAllAccounts());
+         Boolean accounts_migration = posdl.migrateAccounts(
+                 h2de.getMaxAccountsIdValue(),
+                 h2de.getAllAccounts()
+         );
          Boolean demographic_info_migration = posdl.migrateDemographicInfo(h2de.getAllDemographyInfo());
-         Boolean templates_migration = posdl.migrateTemplates(h2de.getAllQuestionnaireTemplates());
-         Boolean questionnaires_migration = posdl.migrateQuestionnaires(h2de.getAllQuestionnaires());
-         Boolean wines_migration = posdl.migrateWines(h2de.getAllQuestionnaireWines());
+         Boolean templates_migration = posdl.migrateTemplates(
+                 h2de.getMaxQuestionnaireTemplatesIdValue(),
+                 h2de.getAllQuestionnaireTemplates()
+         );
+         Boolean questionnaires_migration = posdl.migrateQuestionnaires(
+                 h2de.getMaxQuestionnaireIdValue(),
+                 h2de.getAllQuestionnaires()
+         );
+         Boolean wines_migration = posdl.migrateWines(
+                 h2de.getMaxQuestionnaireWinesIdValue(),
+                 h2de.getAllQuestionnaireWines()
+         );
          Boolean participates_migration = posdl.migrateParticipates(h2de.getAllQuestionnaireParticipants());
          Boolean wines_answ_order_migration = posdl.migrateWinesAnswOrder(h2de.getAllWineParticipantAssignment());
          Boolean responses_migration = posdl.migrateResponses(h2de.getAllQuestionnaireResponses());
 
          // Creating the panelist sequence
          logger.info("\n== Panelist Code Sequence ==");
-         logger.info("Creation resulted " + ((posdl.createPanelistCodeSequence()) ? "successful" : "fail."));
+         logger.info("Creation resulted " + ((posdl.createPanelistCodeSequence(
+                 h2de.getMaxPanelistCodeValue())) ? "successful" : "fail."));
 
          // Printing the results
          logger.info("\n---------------------------------------");
