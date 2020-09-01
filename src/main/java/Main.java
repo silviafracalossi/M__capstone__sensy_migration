@@ -55,7 +55,7 @@ public class Main {
 
          // Creating the objects for methods calling
          h2de = new H2DataExtractor(h2_stmt);
-         posdl = new POSDataLoader(pos_stmt, logger);
+         posdl = new POSDataLoader(pos_conn, pos_stmt, logger);
 
          // Migration
          Boolean accounts_migration = posdl.migrateAccounts(h2de.getAllAccounts());

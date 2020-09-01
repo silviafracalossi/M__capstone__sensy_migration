@@ -2,13 +2,17 @@
 import javax.xml.transform.Result;
 import java.sql.*;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class POSDataLoader {
+    Connection connection;
     Statement stmt;
     Logger logger;
 
     // Dropping the schema every time to avoid conflicts with old records //TODO remove this
-    public POSDataLoader(Statement stmt, Logger logger) throws Exception {
+    public POSDataLoader(Connection pos_conn, Statement stmt, Logger logger) throws Exception {
+        this.connection = pos_conn;
         this.stmt = stmt;
         this.logger = logger;
         String drop_db_sql = "DROP SCHEMA IF EXISTS public CASCADE;";
@@ -42,7 +46,7 @@ public class POSDataLoader {
                 "    CACHE 1;";
 
         String accounts_table_sql = "CREATE TABLE accounts (" +
-                "    id_account bigint NOT NULL DEFAULT nextval('accounts_id_seq'::regclass)," +
+                "    id bigint NOT NULL DEFAULT nextval('accounts_id_seq'::regclass)," +
                 "    first_name character varying(128) COLLATE pg_catalog.\"default\"," +
                 "    last_name character varying(128) COLLATE pg_catalog.\"default\"," +
                 "    email character varying(128) COLLATE pg_catalog.\"default\"," +
@@ -52,7 +56,7 @@ public class POSDataLoader {
                 "    time_registered timestamp with time zone NOT NULL," +
                 "    time_last_login timestamp with time zone NOT NULL," +
                 "    guest_login_code bytea," +
-                "    CONSTRAINT accounts__pk PRIMARY KEY (id_account)," +
+                "    CONSTRAINT accounts__pk PRIMARY KEY (id)," +
                 "    CONSTRAINT accounts__code__unique UNIQUE (code)," +
                 "    CONSTRAINT accounts__email__unique UNIQUE (email)" +
                 ")";
@@ -71,7 +75,7 @@ public class POSDataLoader {
     public Boolean insertAccounts(ResultSet h2_accounts) throws Exception {
         if (h2_accounts != null) {
             String insert_sql = "INSERT INTO accounts (" +
-                    "id_account, first_name, last_name, email, password, account_type, code, " +
+                    "id, first_name, last_name, email, password, account_type, code, " +
                     "time_registered, time_last_login, guest_login_code)" +
                     " VALUES ";
 
@@ -87,22 +91,26 @@ public class POSDataLoader {
                 row_insertion_sql += "'" + h2_accounts.getString("name") + "', ";
                 row_insertion_sql += "'', ";
                 row_insertion_sql += "'" + h2_accounts.getString("email") + "', ";
-                row_insertion_sql+= "'" + h2_accounts.getBytes("password") + "', ";
+                row_insertion_sql+= " ? , ";        // password field
                 row_insertion_sql += "'" + h2_accounts.getInt("account_type") + "', ";
                 row_insertion_sql += "'" + h2_accounts.getInt("code") + "', ";
                 row_insertion_sql+= "'" + h2_accounts.getTimestamp("time_registered") + "', ";
                 row_insertion_sql += "'" + h2_accounts.getTimestamp("time_last_login") + "', ";
-                row_insertion_sql+= "'" + h2_accounts.getBytes("guest_login_code") + "'";
+                row_insertion_sql+= " ? ";        // guest login code
                 row_insertion_sql += ")";
                 row_insertion_sql = row_insertion_sql.replace("''", "NULL");
 
                 // Insert the account into database
                 String final_query = insert_sql+row_insertion_sql+";";
-                if (stmt.executeUpdate(final_query) != 1) {
+                PreparedStatement statement = connection.prepareStatement(final_query);
+                statement.setBytes(1, h2_accounts.getBytes("password"));
+                statement.setBytes(2, h2_accounts.getBytes("guest_login_code"));
+                if (statement.executeUpdate() != 1) {
                     logger.info("[ERROR] Problem executing the following script: \n"+final_query);
                 } else {
                     rows_inserted++;
                 }
+                statement.close();
                 count++;
             }
 
@@ -141,7 +149,7 @@ public class POSDataLoader {
                 "    sulfite_intolerance boolean DEFAULT 'false', \n"   +
                 "    CONSTRAINT demographic_info__pk PRIMARY KEY (id_account),\n" +
                 "    CONSTRAINT demographic_info__id_account__fk FOREIGN KEY (id_account)\n" +
-                "        REFERENCES accounts (id_account) MATCH SIMPLE\n" +
+                "        REFERENCES accounts (id) MATCH SIMPLE\n" +
                 "        ON UPDATE CASCADE\n" +
                 "        ON DELETE CASCADE\n" +
                 ")";
@@ -289,14 +297,14 @@ public class POSDataLoader {
                 "    CACHE 1;";
 
         String templates_table_sql = "CREATE TABLE templates (" +
-                "    id_template bigint NOT NULL DEFAULT nextval('templates_id_seq'::regclass)," +
+                "    id bigint NOT NULL DEFAULT nextval('templates_id_seq'::regclass)," +
                 "    id_creator_account bigint," +
                 "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
                 "    time_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "    template_xml bytea NOT NULL," +
-                "    CONSTRAINT templates__pk PRIMARY KEY (id_template)," +
+                "    CONSTRAINT templates__pk PRIMARY KEY (id)," +
                 "    CONSTRAINT templates__id_creator_account__fk FOREIGN KEY (id_creator_account)" +
-                "        REFERENCES accounts (id_account) MATCH SIMPLE" +
+                "        REFERENCES accounts (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE\n" +
                 "        ON DELETE SET NULL\n" +
                 ")";
@@ -315,7 +323,7 @@ public class POSDataLoader {
     public Boolean insertTemplates(ResultSet h2_questionnairetemplates) throws SQLException {
 
         String insert_sql = "INSERT INTO templates (" +
-                "id_template, id_creator_account, name, time_created, template_xml" +
+                "id, id_creator_account, name, time_created, template_xml" +
                 ") VALUES ";
 
         // Iterating through all the templates retrieved from H2
@@ -329,13 +337,14 @@ public class POSDataLoader {
             row_insertion_sql += "'" + h2_questionnairetemplates.getInt("created_by") + "', ";
             row_insertion_sql += "'" + h2_questionnairetemplates.getString("name") + "', ";
             row_insertion_sql += "'" + h2_questionnairetemplates.getTimestamp("time_created") + "', ";
-            row_insertion_sql+= "'" + h2_questionnairetemplates.getBytes("template_xml") + "'";
-            row_insertion_sql += ")";
+            row_insertion_sql+= " ? )";        // template xml
             row_insertion_sql = row_insertion_sql.replace("''", "NULL");
 
             // Insert the template into database
             String final_query = insert_sql+row_insertion_sql+";";
-            if (stmt.executeUpdate(final_query) != 1) {
+            PreparedStatement statement = connection.prepareStatement(final_query);
+            statement.setBytes(1, h2_questionnairetemplates.getBytes("template_xml") );
+            if (statement.executeUpdate() != 1) {
                 logger.info("[ERROR] Problem executing the following script: \n"+final_query);
             } else {
                 rows_inserted++;
@@ -370,20 +379,20 @@ public class POSDataLoader {
                 "    CACHE 1;";
 
         String questionnaires_table_sql = "CREATE TABLE questionnaires (" +
-                "    id_questionnaire bigint NOT NULL DEFAULT nextval('questionnaires_id_seq'::regclass)," +
+                "    id bigint NOT NULL DEFAULT nextval('questionnaires_id_seq'::regclass)," +
                 "    id_template bigint NOT NULL," +
                 "    id_creator_account bigint," +
                 "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
                 "    time_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "    state integer NOT NULL DEFAULT 0," +
                 "    has_wines boolean NOT NULL DEFAULT 'false'," +
-                "    CONSTRAINT questionnaires__pk PRIMARY KEY (id_questionnaire)," +
+                "    CONSTRAINT questionnaires__pk PRIMARY KEY (id)," +
                 "    CONSTRAINT questionnaires__id_creator_account__fk FOREIGN KEY (id_creator_account)" +
-                "        REFERENCES accounts (id_account) MATCH SIMPLE" +
+                "        REFERENCES accounts (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE SET NULL," +
                 "    CONSTRAINT questionnaires__id_template FOREIGN KEY (id_template)" +
-                "        REFERENCES templates (id_template) MATCH SIMPLE" +
+                "        REFERENCES templates (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE" +
                 ")";
@@ -402,7 +411,7 @@ public class POSDataLoader {
     public Boolean insertQuestionnaires(ResultSet h2_questionnaires) throws SQLException {
 
         String insert_sql = "INSERT INTO questionnaires (" +
-                "id_questionnaire, id_template, id_creator_account, name, time_created, state, has_wines" +
+                "id, id_template, id_creator_account, name, time_created, state, has_wines" +
                 ") VALUES ";
 
         // Iterating through all the questionnaires retrieved from H2
@@ -464,13 +473,13 @@ public class POSDataLoader {
                 "    CACHE 1;";
 
         String wines_table_sql = "CREATE TABLE wines (" +
-                "    id_wine bigint NOT NULL DEFAULT nextval('wines_id_seq'::regclass)," +
+                "    id bigint NOT NULL DEFAULT nextval('wines_id_seq'::regclass)," +
                 "    id_questionnaire bigint NOT NULL," +
                 "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
                 "    code integer NOT NULL," +
-                "    CONSTRAINT wines__pk PRIMARY KEY (id_wine)," +
+                "    CONSTRAINT wines__pk PRIMARY KEY (id)," +
                 "    CONSTRAINT wines__id_questionnaire__fk FOREIGN KEY (id_questionnaire)" +
-                "        REFERENCES questionnaires (id_questionnaire) MATCH SIMPLE" +
+                "        REFERENCES questionnaires (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE" +
                 ")";
@@ -497,7 +506,7 @@ public class POSDataLoader {
     public Boolean insertWines(ResultSet h2_questionnairewines) throws SQLException {
 
         String insert_sql = "INSERT INTO wines (" +
-                "id_wine, id_questionnaire, name, code" +
+                "id, id_questionnaire, name, code" +
                 ") VALUES ";
 
         // Iterating through all the wines retrieved from H2
@@ -553,11 +562,11 @@ public class POSDataLoader {
                 "    time_section_started timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "    CONSTRAINT participates__pk PRIMARY KEY (id_participant_account, id_questionnaire)," +
                 "    CONSTRAINT participates__id_participant__fk FOREIGN KEY (id_participant_account)" +
-                "        REFERENCES accounts (id_account) MATCH SIMPLE" +
+                "        REFERENCES accounts (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE," +
                 "    CONSTRAINT participates__id_questionnaire__fk FOREIGN KEY (id_questionnaire)" +
-                "        REFERENCES questionnaires (id_questionnaire) MATCH SIMPLE" +
+                "        REFERENCES questionnaires (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE" +
                 ")";
@@ -636,11 +645,11 @@ public class POSDataLoader {
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE," +
                 "    CONSTRAINT wines_answ_order__id_questionnaire__fk FOREIGN KEY (id_questionnaire)" +
-                "        REFERENCES questionnaires (id_questionnaire) MATCH SIMPLE" +
+                "        REFERENCES questionnaires (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE," +
                 "    CONSTRAINT wines_answ_order__id_wine__fk FOREIGN KEY (id_wine)" +
-                "        REFERENCES wines (id_wine) MATCH SIMPLE" +
+                "        REFERENCES wines (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE" +
                 ")";
@@ -716,11 +725,11 @@ public class POSDataLoader {
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE RESTRICT," +
                 "    CONSTRAINT responses__id_questionnaire__fk FOREIGN KEY (id_questionnaire)" +
-                "        REFERENCES questionnaires (id_questionnaire) MATCH SIMPLE" +
+                "        REFERENCES questionnaires (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE," +
                 "    CONSTRAINT responses__id_wine__fk FOREIGN KEY (id_wine)" +
-                "        REFERENCES wines (id_wine) MATCH SIMPLE" +
+                "        REFERENCES wines (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
                 "        ON DELETE CASCADE" +
                 ")";
