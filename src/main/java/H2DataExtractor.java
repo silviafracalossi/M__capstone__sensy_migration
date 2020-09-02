@@ -42,7 +42,17 @@ public class H2DataExtractor {
 
     // Retrieving all the questionnaire
     public ResultSet getAllQuestionnaires () throws Exception {
-        String sql = "SELECT * FROM questionnaires;";
+        String sql = "SELECT *," +
+                "CASE WHEN questionnaire IS NULL\n" +
+                "        THEN 'false'\n" +
+                "        ELSE 'true'\n" +
+                "        END AS true_has_wines" +
+                " FROM questionnaires" +
+                "   left join (" +
+                "                SELECT questionnaire" +
+                "                FROM questionnairewines" +
+                "                GROUP BY questionnaire" +
+                "\t) as wines on questionnaires.id = wines.questionnaire;";
         return stmt.executeQuery(sql);
     }
 

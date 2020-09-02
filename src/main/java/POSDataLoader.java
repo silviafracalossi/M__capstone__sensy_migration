@@ -424,11 +424,8 @@ public class POSDataLoader {
             row_insertion_sql += "'" + h2_questionnaires.getString("name") + "', ";
             row_insertion_sql += "'" + h2_questionnaires.getTimestamp("time_created") + "', ";
             row_insertion_sql += "'" + h2_questionnaires.getInt("state") + "', ";
+            row_insertion_sql += h2_questionnaires.getBoolean("true_has_wines");
 
-            // changing the attribute from has_no_wines to has_wines
-            row_insertion_sql += "'" +
-                    ((h2_questionnaires.getBoolean("has_no_wines")) ? "false":"true")
-                    + "'";
             row_insertion_sql += ")";
             row_insertion_sql = row_insertion_sql.replace("''", "NULL");
 
