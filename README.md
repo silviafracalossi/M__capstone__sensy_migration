@@ -18,6 +18,7 @@ Inside the `src/main/java` folder, you can find the following files:
     - first line: `[database_admin_username]`
     - second line: `[database_admin_password]`
 - Run the project:
+    - Connect to the `sensy.inf.unibz.it` server via the `Cisco AnyConnect` application
     - Open the project in Intellij IDEA
     - Compile the maven project (`mvn compile`)
     - Run the project (run main() in Main.java)
