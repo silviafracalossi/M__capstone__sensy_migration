@@ -10,13 +10,13 @@ public class H2DataExtractor {
 
     // Retrieving all the accounts
     public ResultSet getAllAccounts () throws Exception {
-        String sql = "SELECT * FROM accounts;";
+        String sql = "SELECT * FROM `accounts`;";
         return stmt.executeQuery(sql);
     }
 
     // Retrieving the next ID for the accounts
     public int getMaxAccountsIdValue () throws Exception {
-        String sql = "SELECT MAX(ID) AS MAX FROM ACCOUNTS;";
+        String sql = "SELECT MAX(ID) AS MAX FROM `accounts`;";
         ResultSet result = stmt.executeQuery(sql);
         result.next();
         return result.getInt("MAX");
@@ -24,7 +24,7 @@ public class H2DataExtractor {
 
     // Retrieving all the demography info
     public ResultSet getAllDemographyInfo () throws Exception {
-        String sql = "SELECT * FROM demographyinfo ORDER BY user;";
+        String sql = "SELECT * FROM public.demographyinfo ORDER BY user;";
         return stmt.executeQuery(sql);
     }
 

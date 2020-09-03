@@ -88,14 +88,17 @@ public class POSDataLoader {
                 row_insertion_sql += "'" + h2_accounts.getString("name") + "', ";
                 row_insertion_sql += "'', ";
                 row_insertion_sql += "'" + h2_accounts.getString("email") + "', ";
-                row_insertion_sql+= " ? , ";        // password field
+                row_insertion_sql += " ? , ";        // password field
                 row_insertion_sql += "'" + h2_accounts.getInt("account_type") + "', ";
-                row_insertion_sql += "'" + h2_accounts.getInt("code") + "', ";
-                row_insertion_sql+= "'" + h2_accounts.getTimestamp("time_registered") + "', ";
+                row_insertion_sql += ((h2_accounts.getInt("code") != 0) ?
+                        "'" +h2_accounts.getInt("code")+ "', " : "NULL,");
+                row_insertion_sql += "'" + h2_accounts.getTimestamp("time_registered") + "', ";
                 row_insertion_sql += "'" + h2_accounts.getTimestamp("time_last_login") + "', ";
-                row_insertion_sql+= " ? ";        // guest login code
-                row_insertion_sql += ")";
+                row_insertion_sql += " ? ) ";        // guest login code
+
+                // Adding NULL instead of blank space
                 row_insertion_sql = row_insertion_sql.replace("''", "NULL");
+                row_insertion_sql = row_insertion_sql.replace("'null'", "NULL");
 
                 // Insert the account into database
                 String final_query = insert_sql+row_insertion_sql+";";
@@ -142,7 +145,7 @@ public class POSDataLoader {
                 "    home_region character varying(60) NOT NULL, \n"   +
                 "    education character varying(20) NOT NULL, \n"   +
                 "    smoking_detail character varying(100) DEFAULT NULL, \n"   +
-                "    food_intolerance_detail character varying(20) DEFAULT NULL, \n"   +
+                "    food_intolerance_detail character varying(50) DEFAULT NULL, \n"   +
                 "    sulfite_intolerance boolean DEFAULT 'false', \n"   +
                 "    CONSTRAINT demographic_info__pk PRIMARY KEY (id_account),\n" +
                 "    CONSTRAINT demographic_info__id_account__fk FOREIGN KEY (id_account)\n" +

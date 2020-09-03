@@ -1,24 +1,43 @@
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.sql.*;
+import java.util.Scanner;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 public class Main {
 
-   // H2 Database Configurations          // TODO: change DB_URL, user and password
-   static final String H2_DB_URL = "jdbc:h2:D:\\Uni\\repositories\\vincent\\build\\cache\\-database\\vincent";
-   static final String H2_USER = "";
-   static final String H2_PASS = "";
+   // BE CAREFUL!
+   static final boolean useServerH2DB = true;
+   static final boolean useServerPostgresDB = true;
 
-   // Postgres Database Configurations    // TODO: change DB_URL, user and password
+   static H2DataExtractor h2de;
+   static POSDataLoader posdl;
+
+   // ==================H2 configurations====================
+   // LOCAL Configurations
+   static final String H2_DB_URL = "jdbc:h2:D:\\Uni\\repositories\\vincent\\build\\cache\\-database\\vincent";
+   static final String H2_USER = "", H2_PASS = "";
+
+   // SERVER Configurations
+   static final String server_H2_DB_URL = "jdbc:h2:D:\\Uni\\repositories\\sensy_migration\\database\\server_vincent";
+   static final String server_H2_USER = "", server_H2_PASS = "";
+
+
+   // ==================PostgreSQL configurations===================
+   // LOCAL Configurations
    static final String POS_DB_URL = "jdbc:postgresql://localhost/";
    static final String POS_DB_NAME = "sensy_migration";
    static final String POS_DB_USER = "postgres";
    static final String POS_PASS = "silvia";
 
-   static H2DataExtractor h2de;
-   static POSDataLoader posdl;
+   // SERVER Configurations
+   static final String server_POS_DB_URL = "jdbc:postgresql://sensy.inf.unibz.it/";
+   static final String server_POS_DB_NAME = "sensy";
+   static String server_POS_DB_USER;
+   static String server_POS_PASS;
 
 
    public static void main(String[] args) {
@@ -34,6 +53,18 @@ public class Main {
       Connection pos_conn = null;
       Statement pos_stmt = null;
 
+      // Loading the credentials to the new postgresql database
+      try {
+        File myObj = new File("database/server_postgresql_credentials.txt");
+        Scanner myReader = new Scanner(myObj);
+         server_POS_DB_USER = myReader.nextLine();
+         server_POS_PASS = myReader.nextLine();
+        myReader.close();
+      } catch (FileNotFoundException e) {
+        System.out.println("Please, remember to create the database credentials file (see README)");
+        e.printStackTrace();
+      }
+
       try {
 
          // Instantiating logger
@@ -44,12 +75,23 @@ public class Main {
 
          // Opening a connection to the H2 database (DATA ORIGIN)
          logger.info("Connecting to the H2 database...");
-         h2_conn = DriverManager.getConnection(H2_DB_URL,H2_USER,H2_PASS);
+         if (useServerH2DB) {
+            h2_conn = DriverManager.getConnection(server_H2_DB_URL, server_H2_USER, server_H2_PASS);
+         } else {
+            h2_conn = DriverManager.getConnection(H2_DB_URL, H2_USER, H2_PASS);
+         }
          h2_stmt = h2_conn.createStatement();
 
          // Opening a connection to the postgreSQL database (DATA DESTINATION)
          logger.info("Connecting to the PostgreSQLs database...");
-         String pos_complete_url = POS_DB_URL + POS_DB_NAME + "?user=" + POS_DB_USER +"&password=" + POS_PASS;
+         String pos_complete_url;
+         if (useServerPostgresDB) {
+            pos_complete_url = server_POS_DB_URL + server_POS_DB_NAME +
+                    "?user=" + server_POS_DB_USER +"&password=" + server_POS_PASS;
+         } else {
+            pos_complete_url = POS_DB_URL + POS_DB_NAME + "?user=" + POS_DB_USER +"&password=" + POS_PASS;
+         }
+
          pos_conn = DriverManager.getConnection(pos_complete_url);
          pos_stmt = pos_conn.createStatement();
 
@@ -108,6 +150,7 @@ public class Main {
             if(h2_stmt!=null) h2_stmt.close();
             if(pos_stmt!=null) pos_stmt.close();
          } catch(SQLException se2) {
+             se2.printStackTrace();
          }
          try {
             if(h2_conn!=null) h2_conn.close();
