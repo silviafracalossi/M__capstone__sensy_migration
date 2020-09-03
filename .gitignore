@@ -2,3 +2,4 @@
 target/
 sensy_migration.iml
 migration.log
+database/*
