@@ -12,7 +12,7 @@ Inside the `src/main/java` folder, you can find the following files:
 #### To run the project
 - H2 database - retrieve the old H2 database from the server:
     - `sudo apt install putty-tools`
-    - `pscp sfracalossi@sensy.inf.unibz.it:/opt/sensy/resources/-database/vincent.mv.db /mnt/d/Uni/repositories/sensy_migration/server_vincent.mv.db`
+    - `pscp [server_username]@sensy.inf.unibz.it:/opt/sensy/resources/-database/vincent.mv.db [path_to_this_repo]/database/server_vincent.mv.db`
 - PostgreSQL database - create the credentials file to access it:
     - file name: `database/server_postgresql_credentials.txt`
     - first line: `[database_admin_username]`
