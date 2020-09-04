@@ -139,10 +139,10 @@ public class POSDataLoader {
         String demographic_info_table_sql = "CREATE TABLE demographic_info (" +
                 "    id_account bigint NOT NULL,\n" +
                 "    gender character varying(6) NOT NULL, \n"   +
-                "    phone_number character varying(15) NOT NULL, \n"   +
+                "    phone_number character varying(15), \n"   +
                 "    birth_year int NOT NULL, \n"   +
                 "    home_country character varying(60) NOT NULL, \n"   +
-                "    home_region character varying(60) NOT NULL, \n"   +
+                "    home_region character varying(60), \n"   +
                 "    education character varying(20) NOT NULL, \n"   +
                 "    smoking_detail character varying(100) DEFAULT NULL, \n"   +
                 "    food_intolerance_detail character varying(50) DEFAULT NULL, \n"   +
