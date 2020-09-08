@@ -78,6 +78,8 @@ public class POSDataLoader {
 
             String row_insertion_sql = "";
             int count = 0, rows_inserted = 0;
+            String personal_name = "";
+            String[] names;
 
             // Iterating through all the accounts retrieved by H2
             while (h2_accounts.next()) {
@@ -85,8 +87,25 @@ public class POSDataLoader {
                 // Creating the VALUES part for the current account
                 row_insertion_sql = "(";
                 row_insertion_sql += "'" + h2_accounts.getInt("id") + "', ";
-                row_insertion_sql += "'" + h2_accounts.getString("name") + "', ";
-                row_insertion_sql += "'', ";
+
+                // Splitting personal name into first and last names
+                personal_name = h2_accounts.getString("name");
+                if (personal_name != null && personal_name.length()>0) {
+                    names = personal_name.split(" ", 2);
+                    row_insertion_sql += "'" + names[0] + "', ";
+
+                    // Inserting family name if present
+                    if (names.length == 1) {
+                        row_insertion_sql += "'', ";
+                    } else {
+                        row_insertion_sql += "'" + names[1] + "', ";
+                    }
+                } else {
+                    row_insertion_sql += "'" + h2_accounts.getString("name") + "', ";
+                    row_insertion_sql += "'', ";
+                }
+
+
                 row_insertion_sql += "'" + h2_accounts.getString("email") + "', ";
                 row_insertion_sql += " ? , ";        // password field
                 row_insertion_sql += "'" + h2_accounts.getInt("account_type") + "', ";
@@ -385,6 +404,7 @@ public class POSDataLoader {
                 "    name character varying(128) COLLATE pg_catalog.\"default\" NOT NULL," +
                 "    time_created timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP," +
                 "    state integer NOT NULL DEFAULT 0," +
+                "    has_random_order boolean NOT NULL DEFAULT 'true'," +
                 "    has_wines boolean NOT NULL DEFAULT 'false'," +
                 "    CONSTRAINT questionnaires__pk PRIMARY KEY (id)," +
                 "    CONSTRAINT questionnaires__id_creator_account__fk FOREIGN KEY (id_creator_account)" +
@@ -720,7 +740,7 @@ public class POSDataLoader {
                 "    CONSTRAINT responses__id_participant_account_id_questionnaire__fk FOREIGN KEY (id_participant_account, id_questionnaire)\n" +
                 "        REFERENCES participates (id_participant_account, id_questionnaire) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +
-                "        ON DELETE RESTRICT," +
+                "        ON DELETE CASCADE," +
                 "    CONSTRAINT responses__id_questionnaire__fk FOREIGN KEY (id_questionnaire)" +
                 "        REFERENCES questionnaires (id) MATCH SIMPLE" +
                 "        ON UPDATE CASCADE" +

@@ -3,3 +3,4 @@ target/
 sensy_migration.iml
 migration.log
 database/*
+server_vincent.mv.db
