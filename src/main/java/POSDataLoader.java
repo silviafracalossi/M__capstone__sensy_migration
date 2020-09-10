@@ -736,6 +736,7 @@ public class POSDataLoader {
                 "    id_wine bigint NOT NULL," +
                 "    question character varying(64) COLLATE pg_catalog.\"default\" NOT NULL," +
                 "    response character varying(500) COLLATE pg_catalog.\"default\" NOT NULL," +
+                "    answer_order varchar(5) NOT NULL default(0)," +
                 "    CONSTRAINT responses__pk PRIMARY KEY (id_participant_account, id_questionnaire, id_wine, question)," +
                 "    CONSTRAINT responses__id_participant_account_id_questionnaire__fk FOREIGN KEY (id_participant_account, id_questionnaire)\n" +
                 "        REFERENCES participates (id_participant_account, id_questionnaire) MATCH SIMPLE" +

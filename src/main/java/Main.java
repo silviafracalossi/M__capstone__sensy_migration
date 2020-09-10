@@ -11,7 +11,7 @@ public class Main {
 
    // BE CAREFUL!
    static final boolean useServerH2DB = true;
-   static final boolean useServerPostgresDB = true;
+   static final boolean useServerPostgresDB = false;
 
    static H2DataExtractor h2de;
    static POSDataLoader posdl;
